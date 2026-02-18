@@ -32,9 +32,9 @@ Gingoduino is a pure music theory library for embedded systems. Future roadmap f
 
 ---
 
-## v0.2.0 (Planned)
+## v0.2.0 (✅ Released — Feb 2026)
 
-### A. MIDI Export & Import
+### A. MIDI Export & Import ✅ **DONE**
 
 **Goal:** Convert between Gingoduino structures and MIDI bytes
 
@@ -47,63 +47,61 @@ uint16_t len = seq.toMIDI(midiData, sizeof(midiData));
 // Import: MIDI bytes → Gingoduino
 GingoNote note = GingoNote::fromMIDI(60);        // C4
 uint8_t octave = GingoNote::octaveFromMIDI(60); // 4
-
-GingoSequence seq = GingoSequence::fromMIDI(buffer, size);
 ```
 
-**Scope:**
-- MIDI note-on/off encoding
-- Timing based on GingoDuration + GingoTempo
-- Sequence to MIDI track conversion
-- MIDI input parsing (simple)
+**Implemented:**
+- ✅ MIDI note-on/off encoding
+- ✅ Sequence to MIDI byte stream conversion
+- ✅ GingoNote::fromMIDI() and ::octaveFromMIDI()
+- ✅ GingoEvent::fromMIDI()
+- ✅ GingoSequence::toMIDI()
 
 **Not included:**
 - SysEx, CC routing, MIDI 2.0
-- Full MIDI file parsing (leave for specialized libs)
+- Full MIDI file parsing
 
-### B. ESP32_Host_MIDI Integration
+### B. ESP32_Host_MIDI Integration ✅ **DEMONSTRATED**
 
-**Goal:** Make ESP32_Host_MIDI compatible with Gingoduino
+**Implemented via examples** (not in core library):
+- ✅ MIDI_to_Gingoduino.ino — receive USB/BLE MIDI, analyze
+- ✅ RealtimeChordIdentifier.ino — identify chords real-time
+- ✅ Gingoduino_to_MIDI.ino — export sequences to MIDI
 
-```
-MIDI Input (USB/BLE)
-    ↓
-ESP32_Host_MIDI decodes
-    ↓
-GingoNote, GingoDuration, GingoChord
-    ↓
-Gingoduino processes (identify, transpose, analyze)
-    ↓
-GingoSequence
-    ↓
-toMIDI() → MIDI output
-    ↓
-Synth/Speaker
-```
+Bridge functions shown in examples without library dependency.
 
-**Improvements to ESP32_Host_MIDI:**
-- Add bridge functions: `midiEventToGingo()`
-- Support GingoSequence import/export
-- Documentation of integration
+---
 
-### C. Better Examples
+## v0.2.1 (✅ Released — Feb 2026)
 
-- `MIDI_to_Gingoduino.ino` — receive MIDI, process with Gingoduino
-- `Gingoduino_to_MIDI.ino` — create sequences, export to MIDI
-- `RealtimeChordIdentifier.ino` — identify chords from incoming MIDI
-- `SequenceTransposer.ino` — MIDI in → transpose → MIDI out
+### MIDI Velocity & Channel Per Event ✅ **DONE**
 
-**New Library Recommendation:**
-Create optional **`GingoduinoMIDI`** layer:
+**Goal:** Make MIDI properties (velocity, channel) core event properties
+
 ```cpp
-#include <Gingoduino.h>
-#include <GingoduinoMIDI.h>  // Optional
+// v0.2.1 API
+GingoEvent e = GingoEvent::noteEvent(
+    GingoNote("C"), GingoDuration("quarter"), 4,
+    100,  // velocity (0-127)
+    1     // MIDI channel (1-16)
+);
 
-GingoSequence seq = ...;
-MIDIBuffer buf = seq.toMIDI();  // Via GingoduinoMIDI
+e.velocity();          // 100
+e.setVelocity(64);
+e.midiChannel();       // 1
+e.setMidiChannel(2);
+
+e.toMIDI(buf);         // Uses internal velocity/channel
 ```
 
-This keeps Gingoduino lightweight while providing MIDI as an optional add-on.
+**Implemented:**
+- ✅ velocity_ and midiChannel_ private fields in GingoEvent
+- ✅ Getters: velocity(), midiChannel()
+- ✅ Setters: setVelocity(), setMidiChannel() with validation
+- ✅ Updated factories: noteEvent(), chordEvent(), fromMIDI()
+- ✅ Simplified toMIDI(buf) API (no parameters)
+- ✅ 8 new tests for velocity/channel customization
+
+**Result:** Professional, bounds-checked MIDI properties. Ready for Daisy integration.
 
 ---
 
@@ -260,9 +258,11 @@ Additional tiers possible:
 ## Release Schedule
 
 - **v0.1.0**: Initial Arduino Library Manager (Feb 2026) ✅
-- **v0.2.0**: MIDI I/O + examples (Q2 2026)
-- **v0.3.0**: XML/JSON export (Q3 2026)
-- **v1.0.0**: Stable API + community feedback (Q4 2026+)
+- **v0.2.0**: MIDI I/O + examples (Feb 2026) ✅
+- **v0.2.1**: MIDI velocity & channel per event (Feb 2026) ✅
+- **v0.3.0**: Frequency analysis + harmonic context (Q3 2026)
+- **v0.4.0**: Voicing generation + voice leading (Q4 2026)
+- **v1.0.0**: Stable API + community feedback (2027+)
 
 ---
 
