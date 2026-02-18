@@ -1,30 +1,65 @@
-// Gingoduino — T-Display-S3 Music Theory Explorer
+// Gingoduino — T-Display-S3 Music Theory Explorer + Audio Synthesis
 //
 // SPDX-License-Identifier: MIT
 //
 // Interactive demo for LilyGo T-Display-S3 (ESP32-S3 + ST7789 170x320).
+// Features real-time audio synthesis via I2S → PCM5102 DAC.
+//
 // Navigate with the 2 built-in buttons:
-//   LEFT  (GPIO 0 / BOOT): switch page
-//   RIGHT (GPIO 14):       cycle items within page
+//   LEFT  (GPIO 0 / BOOT): switch page (stops audio)
+//   RIGHT (GPIO 14):       cycle items within page (plays audio)
+//                          OR play/stop sequence (on Sequence page)
 //
-// Pages:
+// Pages (each plays audio when navigating):
 //   1. Note Explorer       — 12 chromatic notes with frequency/MIDI
-//   2. Interval Explorer   — 12 simple intervals with consonance
+//   2. Interval Explorer   — 12 simple intervals (plays as 2-voice)
 //   3. Chord Explorer      — common chords with notes and intervals
-//   4. Scale Explorer      — scales/modes with signature, brightness
-//   5. Harmonic Field      — triads + sevenths with T/S/D functions
+//   4. Scale Explorer      — scales/modes (plays as arpeggio)
+//   5. Harmonic Field      — triads + sevenths with T/S/D (plays progression)
 //   6. Fretboard           — guitar diagram with chord/scale overlay
-//   7. Sequence            — timeline visualization of musical events
+//   7. Sequence            — timeline visualization with PLAY/STOP button
 //
-// REQUIRES: TFT_eSPI library configured for T-Display-S3
-//   In TFT_eSPI/User_Setup_Select.h:
-//     - Comment out:   #include <User_Setup.h>
-//     - Uncomment:     #include <User_Setups/Setup206_LilyGo_T_Display_S3.h>
+// Audio Hardware: PCM5102A I2S DAC (3.5mm stereo output)
+//   GPIO 17: I2S DIN (data)
+//   GPIO 18: I2S BCK (bit clock)
+//   GPIO 44: I2S LRCK (left-right clock)
+//   GPIO 43: I2S MCLK (master clock)
+//
+// REQUIRES:
+//   - TFT_eSPI library configured for T-Display-S3
+//     In TFT_eSPI/User_Setup_Select.h:
+//       - Comment out:   #include <User_Setup.h>
+//       - Uncomment:     #include <User_Setups/Setup206_LilyGo_T_Display_S3.h>
+//   - T-Display-S3 MIDI Shield v1.1 (with PCM5102 DAC module)
 
 #include <TFT_eSPI.h>
 #include <Gingoduino.h>
+#include <I2S.h>
+#include <freertos/task.h>
 
 using namespace gingoduino;
+
+// ---------------------------------------------------------------------------
+// I2S Audio Configuration (PCM5102 DAC via I2S)
+// ---------------------------------------------------------------------------
+#define I2S_BCLK   GPIO_NUM_18
+#define I2S_LRCK   GPIO_NUM_44
+#define I2S_DIN    GPIO_NUM_17
+#define I2S_MCLK   GPIO_NUM_43
+#define SAMPLE_RATE 44100
+#define I2S_BUFFER_SIZE 512
+
+// Audio synthesis state
+struct AudioState {
+    volatile bool playing = false;
+    volatile float frequencies[4] = {0, 0, 0, 0};  // up to 4-voice polyphony
+    volatile uint8_t numVoices = 0;
+    volatile float envelope = 1.0f;
+    volatile float targetEnvelope = 1.0f;
+    uint32_t playStartMs = 0;
+};
+static AudioState audioState;
+static TaskHandle_t audioTaskHandle = NULL;
 
 // ---------------------------------------------------------------------------
 // Hardware
@@ -83,11 +118,17 @@ enum Page {
 static Page    currentPage = PAGE_NOTE;
 static uint8_t itemIdx     = 0;
 static bool    needRedraw  = true;
+static uint8_t lastItemIdx = 0;
+static Page    lastPage = PAGE_NOTE;
 
 // Debounce
 static unsigned long lastBtnLeft  = 0;
 static unsigned long lastBtnRight = 0;
 #define DEBOUNCE_MS 250
+
+// Audio control flags
+static bool audioEnabled = true;
+static bool seqPlaying = false;
 
 // ---------------------------------------------------------------------------
 // Data for cycling
@@ -1029,6 +1070,230 @@ void drawSequencePage() {
     tft.print(" beats  ");
     tft.print(totalS, 1);
     tft.print("s");
+
+    // PLAY button indicator
+    tft.setTextSize(2);
+    int playBtnX = SCR_W - 70;
+    int playBtnY = SCR_H - 40;
+    uint16_t btnColor = seqPlaying ? C_ACCENT : C_SEQUENCE;
+    tft.fillRoundRect(playBtnX, playBtnY, 60, 24, 4, btnColor);
+    tft.setTextColor(0x0000, btnColor);
+    tft.setCursor(playBtnX + 10, playBtnY + 4);
+    tft.print(seqPlaying ? "STOP" : "PLAY");
+}
+
+// ---------------------------------------------------------------------------
+// Audio Synthesis Task
+// ---------------------------------------------------------------------------
+
+/// FreeRTOS task that generates audio samples continuously.
+/// Runs on core 1 to avoid blocking the display on core 0.
+void audioTask(void* pvParameters) {
+    // I2S configuration
+    i2s_config_t i2s_config = {
+        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
+        .sample_rate = SAMPLE_RATE,
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
+        .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+        .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_STAND_I2S),
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+        .dma_buf_count = 8,
+        .dma_buf_len = I2S_BUFFER_SIZE,
+        .use_apll = false,
+        .tx_desc_auto_clear = true,
+        .fixed_mclk = 0,
+    };
+
+    i2s_pin_config_t pin_config = {
+        .bck_io_num = I2S_BCLK,
+        .ws_io_num = I2S_LRCK,
+        .data_out_num = I2S_DIN,
+        .data_in_num = I2S_PIN_NO_CHANGE,
+        .mck_io_num = I2S_MCLK,
+    };
+
+    i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
+    i2s_set_pin(I2S_NUM_0, &pin_config);
+
+    int16_t* buffer = (int16_t*)malloc(I2S_BUFFER_SIZE * sizeof(int16_t));
+    float phase[4] = {0, 0, 0, 0};
+
+    while (true) {
+        // Generate samples
+        for (int i = 0; i < I2S_BUFFER_SIZE; i++) {
+            float sample = 0.0f;
+
+            if (audioState.playing && audioState.numVoices > 0) {
+                // Mix multiple voices
+                for (uint8_t v = 0; v < audioState.numVoices; v++) {
+                    if (audioState.frequencies[v] > 0) {
+                        // Sine wave oscillator
+                        float freq = audioState.frequencies[v];
+                        phase[v] += (2.0f * M_PI * freq) / SAMPLE_RATE;
+                        if (phase[v] > 2.0f * M_PI) phase[v] -= 2.0f * M_PI;
+
+                        sample += sin(phase[v]) / audioState.numVoices;
+                    }
+                }
+
+                // Apply envelope
+                sample *= audioState.envelope;
+
+                // Smooth envelope transitions
+                if (audioState.envelope < audioState.targetEnvelope) {
+                    audioState.envelope += 0.001f;  // attack
+                } else if (audioState.envelope > audioState.targetEnvelope) {
+                    audioState.envelope -= 0.005f;  // release (faster)
+                }
+                if (audioState.envelope < 0.0f) audioState.envelope = 0.0f;
+                if (audioState.envelope > 1.0f) audioState.envelope = 1.0f;
+            } else {
+                sample = 0.0f;
+                audioState.envelope = 0.0f;
+            }
+
+            // Convert to 16-bit stereo
+            int16_t sample16 = (int16_t)(sample * 32767.0f * 0.7f);  // 0.7 for headroom
+            buffer[i] = sample16;
+        }
+
+        // Send to I2S
+        size_t bytes_written = 0;
+        i2s_write(I2S_NUM_0, buffer, I2S_BUFFER_SIZE * sizeof(int16_t), &bytes_written, portMAX_DELAY);
+
+        vTaskDelay(1);
+    }
+
+    free(buffer);
+    vTaskDelete(NULL);
+}
+
+/// Stop audio playback smoothly (envelope release).
+void stopAudio() {
+    audioState.targetEnvelope = 0.0f;
+    audioState.playStartMs = millis();
+}
+
+/// Play a single note.
+void playNote(const GingoNote& note, uint8_t octave = 4, uint32_t durationMs = 500) {
+    audioState.frequencies[0] = note.frequency(octave);
+    audioState.numVoices = 1;
+    audioState.playing = true;
+    audioState.targetEnvelope = 1.0f;
+}
+
+/// Play a chord (up to 4 notes).
+void playChord(const GingoChord& chord, uint8_t octave = 4, uint32_t durationMs = 500) {
+    GingoNote notes[7];
+    uint8_t count = chord.notes(notes, 7);
+    if (count > 4) count = 4;  // limit to 4 voices
+
+    for (uint8_t i = 0; i < count; i++) {
+        audioState.frequencies[i] = notes[i].frequency(octave);
+    }
+    audioState.numVoices = count;
+    audioState.playing = true;
+    audioState.targetEnvelope = 1.0f;
+}
+
+/// Play a scale as an arpeggio (sequential notes).
+void playScaleArpeggio(const GingoScale& scale, uint8_t octave = 4) {
+    GingoNote notes[12];
+    uint8_t count = scale.notes(notes, 12);
+
+    // Play each note sequentially
+    for (uint8_t i = 0; i < count; i++) {
+        audioState.frequencies[0] = notes[i].frequency(octave);
+        audioState.numVoices = 1;
+        audioState.playing = true;
+        audioState.targetEnvelope = 1.0f;
+        delay(200);  // 200ms per note
+    }
+    stopAudio();
+}
+
+/// Play sequence of events.
+void playSequence(const GingoSequence& seq) {
+    const GingoTempo& tempo = seq.tempo();
+
+    for (uint8_t i = 0; i < seq.size(); i++) {
+        const GingoEvent& evt = seq.at(i);
+
+        // Calculate duration in milliseconds
+        float beats = evt.duration().beats();
+        uint32_t durationMs = (uint32_t)(tempo.msPerBeat() * beats);
+
+        // Play the event
+        if (evt.type() == EVENT_NOTE) {
+            playNote(evt.note(), evt.octave());
+        } else if (evt.type() == EVENT_CHORD) {
+            playChord(evt.chord(), evt.octave());
+        } else {
+            stopAudio();
+        }
+
+        delay(durationMs);
+    }
+
+    stopAudio();
+}
+
+/// Trigger audio for the current page/item.
+void triggerAudioForCurrentPage() {
+    if (!audioEnabled) return;
+
+    switch (currentPage) {
+        case PAGE_NOTE: {
+            GingoNote note(NOTE_NAMES[itemIdx % 12]);
+            playNote(note, 4, 300);
+            break;
+        }
+        case PAGE_INTERVAL: {
+            // Play interval as two notes
+            GingoNote c("C");
+            GingoNote other(c.transpose(itemIdx % 12));
+            audioState.frequencies[0] = c.frequency(4);
+            audioState.frequencies[1] = other.frequency(4);
+            audioState.numVoices = 2;
+            audioState.playing = true;
+            audioState.targetEnvelope = 1.0f;
+            break;
+        }
+        case PAGE_CHORD: {
+            uint8_t idx = itemIdx % CHORD_LIST_SIZE;
+            GingoChord chord(CHORD_LIST[idx]);
+            playChord(chord, 4, 500);
+            break;
+        }
+        case PAGE_SCALE: {
+            uint8_t idx = itemIdx % SCALE_LIST_SIZE;
+            const ScaleEntry& se = SCALE_LIST[idx];
+            GingoScale scale(se.tonic, se.type);
+            playScaleArpeggio(scale, 4);
+            break;
+        }
+        case PAGE_FIELD: {
+            uint8_t idx = itemIdx % FIELD_LIST_SIZE;
+            const FieldEntry& fe = FIELD_LIST[idx];
+            GingoField field(fe.tonic, fe.type);
+
+            // Play the 7 chords as a progression
+            GingoChord chords[7];
+            uint8_t count = field.chords(chords, 7);
+
+            for (uint8_t i = 0; i < count; i++) {
+                playChord(chords[i], 4);
+                delay(400);
+            }
+            stopAudio();
+            break;
+        }
+        case PAGE_SEQUENCE:
+            // Sequence play handled separately via RIGHT button
+            break;
+        default:
+            break;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1054,25 +1319,76 @@ void setup() {
     tft.fillScreen(C_BG);
 
     Serial.begin(115200);
-    Serial.println("Gingoduino T-Display-S3 Explorer");
+    Serial.println("Gingoduino T-Display-S3 Explorer + Audio Synthesis");
+
+    // Start audio synthesis task on core 1
+    xTaskCreatePinnedToCore(
+        audioTask,           // function
+        "AudioTask",         // name
+        4096,                // stack size (bytes)
+        NULL,                // parameters
+        1,                   // priority
+        &audioTaskHandle,    // task handle
+        1                    // core (1 = core 1, to avoid blocking display on core 0)
+    );
 }
 
 void loop() {
     unsigned long now = millis();
 
-    // LEFT button — switch page
+    // LEFT button — switch page, stop any playing audio
     if (digitalRead(BTN_LEFT) == LOW && (now - lastBtnLeft) > DEBOUNCE_MS) {
         lastBtnLeft = now;
+        stopAudio();
+        seqPlaying = false;
         currentPage = (Page)(((uint8_t)currentPage + 1) % PAGE_COUNT);
         itemIdx = 0;
+        lastItemIdx = 0;
+        lastPage = currentPage;
         needRedraw = true;
     }
 
-    // RIGHT button — next item
+    // RIGHT button behavior depends on current page
     if (digitalRead(BTN_RIGHT) == LOW && (now - lastBtnRight) > DEBOUNCE_MS) {
         lastBtnRight = now;
-        itemIdx++;
-        needRedraw = true;
+
+        if (currentPage == PAGE_SEQUENCE) {
+            // In sequence page: PLAY/STOP
+            if (seqPlaying) {
+                stopAudio();
+                seqPlaying = false;
+                needRedraw = true;
+            } else {
+                seqPlaying = true;
+                needRedraw = true;
+                // Trigger sequence playback in a non-blocking way would be better,
+                // but for now we'll play it synchronously
+                uint8_t idx = itemIdx % SEQ_PRESETS_SIZE;
+                const SeqPreset& sp = SEQ_PRESETS[idx];
+
+                GingoTempo tempo(sp.bpm);
+                GingoTimeSig timeSig(sp.beatsPerBar, sp.beatUnit);
+                GingoSequence seq(tempo, timeSig);
+                buildPresetSequence(idx, seq);
+
+                playSequence(seq);
+                seqPlaying = false;
+                needRedraw = true;
+            }
+        } else {
+            // Other pages: cycle items and trigger audio
+            itemIdx++;
+            needRedraw = true;
+        }
+    }
+
+    // Trigger audio when item changes on non-sequence pages
+    if (needRedraw && currentPage != PAGE_SEQUENCE) {
+        if (itemIdx != lastItemIdx || currentPage != lastPage) {
+            lastItemIdx = itemIdx;
+            lastPage = currentPage;
+            triggerAudioForCurrentPage();
+        }
     }
 
     // Redraw
