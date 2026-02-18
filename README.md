@@ -2,7 +2,7 @@
   <img src="extras/gingoduino.png" alt="Gingoduino" width="480">
 </p>
 
-# Gingoduino
+# 🪇 Gingo[duino]
 
 **Music Theory Library for Embedded Systems**
 **Biblioteca de Teoria Musical para Sistemas Embarcados**
