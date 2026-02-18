@@ -1,5 +1,7 @@
 // Gingoduino — ChordNotes Example
 // Demonstrates GingoChord: construction, notes, intervals, identify.
+//
+// SPDX-License-Identifier: MIT
 
 #include <Gingoduino.h>
 
