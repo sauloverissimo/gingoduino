@@ -34,8 +34,7 @@
 
 #include <TFT_eSPI.h>
 #include <Gingoduino.h>
-#include <I2S.h>
-#include <freertos/task.h>
+#include <driver/i2s.h>
 
 using namespace gingoduino;
 
@@ -1105,11 +1104,11 @@ void audioTask(void* pvParameters) {
     };
 
     i2s_pin_config_t pin_config = {
+        .mck_io_num = I2S_MCLK,
         .bck_io_num = I2S_BCLK,
         .ws_io_num = I2S_LRCK,
         .data_out_num = I2S_DIN,
         .data_in_num = I2S_PIN_NO_CHANGE,
-        .mck_io_num = I2S_MCLK,
     };
 
     i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
