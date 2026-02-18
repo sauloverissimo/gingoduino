@@ -224,20 +224,25 @@ seq.transpose(5);   // transpose all events
 
 #### T-Display S3 Explorer
 
-Interactive demo on LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI).
+Interactive demo on LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI) with real-time audio synthesis via I2S DAC.
+
+<p align="center">
+  <img src="examples/TDisplayS3Explorer/images/tdisplay6.jpeg" alt="T-Display S3 with MIDI Shield" width="520">
+</p>
 
 **Setup:** Install TFT_eSPI, configure for T-Display S3 (`Setup206_LilyGo_T_Display_S3.h`).
 
 **Navigation:** BOOT = switch page, KEY = cycle items.
 
 **Pages:**
-1. **Note Explorer** — 12 chromatic notes with MIDI, frequency, chromatic bar
-2. **Interval Explorer** — Consonance colors, full names EN/PT, chromatic bar
-3. **Chord Explorer** — Notes, intervals with consonance coloring
-4. **Scale Explorer** — Signature, brightness bar, relative/parallel
-5. **Harmonic Field** — Triads with T/S/D functions, role labels, sevenths
-6. **Fretboard** — Guitar diagram with chord fingerings and scale overlays
-7. **Sequence** — Timeline visualization with beat grid and event blocks
+
+| | |
+|:---:|:---:|
+| <img src="examples/TDisplayS3Explorer/images/tdisplay1.jpeg" alt="Note Explorer" width="280"><br>**Note Explorer** — MIDI, frequency, chromatic bar | <img src="examples/TDisplayS3Explorer/images/tdisplay4.jpeg" alt="Interval Explorer" width="280"><br>**Interval Explorer** — Consonance, full names EN/PT |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay2.jpeg" alt="Chord Explorer" width="280"><br>**Chord Explorer** — Notes, intervals, consonance colors | <img src="examples/TDisplayS3Explorer/images/tdisplay3.jpeg" alt="Scale Explorer" width="280"><br>**Scale Explorer** — Brightness, relative/parallel |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay5.jpg" alt="Fretboard" width="280"><br>**Fretboard** — Chord fingerings and scale overlays | |
+
+Additional pages: **Harmonic Field** (triads, T/S/D functions, sevenths) and **Sequence** (timeline with beat grid).
 
 ### MIDI Support (v0.2.0+)
 
@@ -399,20 +404,25 @@ void loop() {}
 
 #### T-Display S3 Explorer
 
-Demo interativo no LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI).
+Demo interativo no LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI) com sintese de audio em tempo real via I2S DAC.
+
+<p align="center">
+  <img src="examples/TDisplayS3Explorer/images/tdisplay6.jpeg" alt="T-Display S3 com MIDI Shield" width="520">
+</p>
 
 **Setup:** Instale TFT_eSPI, configure para T-Display S3 (`Setup206_LilyGo_T_Display_S3.h`).
 
 **Navegacao:** BOOT = trocar pagina, KEY = proximo item.
 
 **Paginas:**
-1. **Note Explorer** — 12 notas cromaticas com MIDI, frequencia, barra cromatica
-2. **Interval Explorer** — Cores de consonancia, nomes completos EN/PT, barra cromatica
-3. **Chord Explorer** — Notas, intervalos com cor de consonancia
-4. **Scale Explorer** — Armadura, barra de brilho, relativa/paralela
-5. **Harmonic Field** — Triades com funcoes T/S/D, role labels, tetrades
-6. **Fretboard** — Diagrama de violao com digitacoes de acordes e overlay de escalas
-7. **Sequence** — Timeline visual com grid de beats e blocos de eventos
+
+| | |
+|:---:|:---:|
+| <img src="examples/TDisplayS3Explorer/images/tdisplay1.jpeg" alt="Note Explorer" width="280"><br>**Note Explorer** — MIDI, frequencia, barra cromatica | <img src="examples/TDisplayS3Explorer/images/tdisplay4.jpeg" alt="Interval Explorer" width="280"><br>**Interval Explorer** — Consonancia, nomes EN/PT |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay2.jpeg" alt="Chord Explorer" width="280"><br>**Chord Explorer** — Notas, intervalos, cores de consonancia | <img src="examples/TDisplayS3Explorer/images/tdisplay3.jpeg" alt="Scale Explorer" width="280"><br>**Scale Explorer** — Brilho, relativa/paralela |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay5.jpg" alt="Fretboard" width="280"><br>**Fretboard** — Digitacoes de acordes e overlay de escalas | |
+
+Paginas adicionais: **Harmonic Field** (triades, funcoes T/S/D, tetrades) e **Sequence** (timeline com grid de beats).
 
 ### MIDI Support (v0.2.0+)
 
