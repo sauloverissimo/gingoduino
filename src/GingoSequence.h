@@ -65,6 +65,11 @@ public:
     /// Transpose all events by a number of semitones.
     void transpose(int8_t semitones);
 
+    /// Serialize all events to raw MIDI bytes (NoteOn/NoteOff pairs).
+    /// Returns total number of bytes written.
+    /// Stops early if buffer is too small for an event.
+    uint16_t toMIDI(uint8_t* buf, uint16_t maxLen, uint8_t channel = 1) const;
+
     /// Current tempo.
     const GingoTempo& tempo() const { return tempo_; }
 

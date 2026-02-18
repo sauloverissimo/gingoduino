@@ -54,6 +54,12 @@ public:
     /// Factory: create a rest event.
     static GingoEvent rest(const GingoDuration& duration);
 
+    /// Factory: create a note event from MIDI number.
+    /// octave is extracted from midiNote automatically.
+    /// Duration defaults to quarter note.
+    static GingoEvent fromMIDI(uint8_t midiNote,
+                               const GingoDuration& duration = GingoDuration("quarter"));
+
     /// The event type.
     EventType type() const { return type_; }
 
@@ -77,6 +83,12 @@ public:
 
     /// Transpose the event by a number of semitones.
     GingoEvent transpose(int8_t semitones) const;
+
+    /// Serialize to raw MIDI bytes (NoteOn + NoteOff for notes, nothing for rests).
+    /// Returns number of bytes written (6 for note event, 0 for rest).
+    /// buf must have at least 6 bytes available.
+    /// For chord events, encodes the root note only.
+    uint8_t toMIDI(uint8_t* buf, uint8_t channel = 1, uint8_t velocity = 100) const;
 
 private:
     EventType    type_;

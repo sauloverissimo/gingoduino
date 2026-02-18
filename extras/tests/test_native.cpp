@@ -615,6 +615,79 @@ void testSequence() {
 }
 
 // =====================================================================
+// MIDI Conversion (Tier 1+3)
+// =====================================================================
+
+void testMIDI() {
+    printf("\n=== MIDI Conversion ===\n");
+
+    // GingoNote::fromMIDI
+    GingoNote c4 = GingoNote::fromMIDI(60);
+    CHECK(c4.semitone() == 0, "fromMIDI(60) semitone=0");
+
+    GingoNote a4 = GingoNote::fromMIDI(69);
+    CHECK(a4.semitone() == 9, "fromMIDI(69) semitone=9");
+
+    // GingoNote::octaveFromMIDI
+    int8_t octave60 = GingoNote::octaveFromMIDI(60);
+    CHECK(octave60 == 4, "octaveFromMIDI(60)=4");
+
+    int8_t octave69 = GingoNote::octaveFromMIDI(69);
+    CHECK(octave69 == 4, "octaveFromMIDI(69)=4");
+
+    int8_t octave0 = GingoNote::octaveFromMIDI(12);
+    CHECK(octave0 == 0, "octaveFromMIDI(12)=0");
+
+    // Roundtrip: midiNumber -> fromMIDI -> midiNumber
+    GingoNote cTest("C");
+    uint8_t midiOrig = cTest.midiNumber(4);  // 60
+    GingoNote cFromMidi = GingoNote::fromMIDI(midiOrig);
+    uint8_t midiRoundtrip = cFromMidi.midiNumber(4);
+    CHECK(midiOrig == midiRoundtrip, "C4: MIDI roundtrip");
+
+    // GingoEvent::fromMIDI
+    GingoEvent e60 = GingoEvent::fromMIDI(60, GingoDuration("quarter"));
+    CHECK(e60.type() == EVENT_NOTE, "fromMIDI event type=NOTE");
+    CHECK(e60.midiNumber() == 60, "fromMIDI event midi=60");
+    CHECK(e60.octave() == 4, "fromMIDI event octave=4");
+
+    // GingoEvent::toMIDI
+    uint8_t midiBuffer[6];
+    uint8_t written = e60.toMIDI(midiBuffer, 1, 100);
+    CHECK(written == 6, "noteEvent toMIDI writes 6 bytes");
+    CHECK(midiBuffer[0] == 0x90, "NoteOn status=0x90");
+    CHECK(midiBuffer[1] == 60, "NoteOn note=60");
+    CHECK(midiBuffer[2] == 100, "NoteOn velocity=100");
+    CHECK(midiBuffer[3] == 0x80, "NoteOff status=0x80");
+    CHECK(midiBuffer[4] == 60, "NoteOff note=60");
+    CHECK(midiBuffer[5] == 0, "NoteOff velocity=0");
+
+    // Rest event toMIDI (should return 0)
+    GingoEvent rest = GingoEvent::rest(GingoDuration("quarter"));
+    uint8_t restWritten = rest.toMIDI(midiBuffer, 1, 100);
+    CHECK(restWritten == 0, "rest toMIDI writes 0 bytes");
+
+    // GingoSequence::toMIDI
+    GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
+    seq.add(GingoEvent::noteEvent(GingoNote("C"), GingoDuration("quarter"), 4));
+    seq.add(GingoEvent::noteEvent(GingoNote("E"), GingoDuration("quarter"), 4));
+    seq.add(GingoEvent::rest(GingoDuration("half")));
+
+    uint8_t seqBuffer[32];
+    uint16_t seqWritten = seq.toMIDI(seqBuffer, sizeof(seqBuffer), 1);
+    CHECK(seqWritten == 12, "sequence with 2 notes toMIDI writes 12 bytes (6+6)");
+
+    // Check specific bytes from first event (C4)
+    CHECK(seqBuffer[0] == 0x90, "seq[0] NoteOn status");
+    CHECK(seqBuffer[1] == 60, "seq[1] C4 note");
+    CHECK(seqBuffer[3] == 0x80, "seq[3] NoteOff status");
+
+    // Check second event (E4 = 64)
+    CHECK(seqBuffer[6] == 0x90, "seq[6] second NoteOn");
+    CHECK(seqBuffer[7] == 64, "seq[7] E4 note");
+}
+
+// =====================================================================
 // Fretboard
 // =====================================================================
 
@@ -722,6 +795,7 @@ int main() {
     testTimeSig();
     testEvent();
     testSequence();
+    testMIDI();
     testFretboard();
 
     printf("\n======================\n");
