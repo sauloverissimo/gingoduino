@@ -81,8 +81,14 @@ uint16_t GingoSequence::toMIDI(uint8_t* buf, uint16_t maxLen, uint8_t channel) c
             break;  // Stop early if buffer is too small
         }
 
-        // Serialize this event
-        uint8_t written = events_[i].toMIDI(buf + offset, channel, 100);
+        // For GingoSequence, override MIDI channel if specified (default: use event's channel)
+        GingoEvent eventToSend = events_[i];
+        if (channel != 0) {  // 0 = use event's channel, otherwise override
+            eventToSend.setMidiChannel(channel);
+        }
+
+        // Serialize this event (no longer needs channel/velocity parameters)
+        uint8_t written = eventToSend.toMIDI(buf + offset);
         offset += written;
     }
 

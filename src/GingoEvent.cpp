@@ -10,28 +10,36 @@
 namespace gingoduino {
 
 GingoEvent::GingoEvent()
-    : type_(EVENT_REST), octave_(4)
+    : type_(EVENT_REST), octave_(4), velocity_(100), midiChannel_(1)
 {}
 
 GingoEvent GingoEvent::noteEvent(const GingoNote& note,
                                  const GingoDuration& duration,
-                                 uint8_t octave) {
+                                 uint8_t octave,
+                                 uint8_t velocity,
+                                 uint8_t midiChannel) {
     GingoEvent e;
     e.type_ = EVENT_NOTE;
     e.note_ = note;
     e.duration_ = duration;
     e.octave_ = octave;
+    e.velocity_ = velocity & 0x7F;
+    e.midiChannel_ = (midiChannel > 0 && midiChannel <= 16) ? midiChannel : 1;
     return e;
 }
 
 GingoEvent GingoEvent::chordEvent(const GingoChord& chord,
                                   const GingoDuration& duration,
-                                  uint8_t octave) {
+                                  uint8_t octave,
+                                  uint8_t velocity,
+                                  uint8_t midiChannel) {
     GingoEvent e;
     e.type_ = EVENT_CHORD;
     e.chord_ = chord;
     e.duration_ = duration;
     e.octave_ = octave;
+    e.velocity_ = velocity & 0x7F;
+    e.midiChannel_ = (midiChannel > 0 && midiChannel <= 16) ? midiChannel : 1;
     return e;
 }
 
@@ -42,10 +50,13 @@ GingoEvent GingoEvent::rest(const GingoDuration& duration) {
     return e;
 }
 
-GingoEvent GingoEvent::fromMIDI(uint8_t midiNote, const GingoDuration& duration) {
+GingoEvent GingoEvent::fromMIDI(uint8_t midiNote,
+                                const GingoDuration& duration,
+                                uint8_t velocity,
+                                uint8_t midiChannel) {
     GingoNote note = GingoNote::fromMIDI(midiNote);
     int8_t octave = GingoNote::octaveFromMIDI(midiNote);
-    return noteEvent(note, duration, (uint8_t)octave);
+    return noteEvent(note, duration, (uint8_t)octave, velocity, midiChannel);
 }
 
 uint8_t GingoEvent::midiNumber() const {
@@ -75,7 +86,7 @@ GingoEvent GingoEvent::transpose(int8_t semitones) const {
     }
 }
 
-uint8_t GingoEvent::toMIDI(uint8_t* buf, uint8_t channel, uint8_t velocity) const {
+uint8_t GingoEvent::toMIDI(uint8_t* buf) const {
     if (!buf) return 0;
 
     if (type_ == EVENT_REST) {
@@ -83,15 +94,15 @@ uint8_t GingoEvent::toMIDI(uint8_t* buf, uint8_t channel, uint8_t velocity) cons
     }
 
     uint8_t noteNum = midiNumber();
-    uint8_t status = 0x90 | ((channel - 1) & 0x0F);  // NoteOn status byte
+    uint8_t status = 0x90 | ((midiChannel_ - 1) & 0x0F);  // NoteOn status byte
 
     // NoteOn: [status, note, velocity]
     buf[0] = status;
     buf[1] = noteNum;
-    buf[2] = velocity & 0x7F;
+    buf[2] = velocity_;
 
     // NoteOff: [status, note, 0]
-    buf[3] = 0x80 | ((channel - 1) & 0x0F);
+    buf[3] = 0x80 | ((midiChannel_ - 1) & 0x0F);
     buf[4] = noteNum;
     buf[5] = 0;
 
