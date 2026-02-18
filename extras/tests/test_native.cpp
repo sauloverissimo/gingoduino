@@ -1,0 +1,730 @@
+// Native test — compiles with g++ to verify gingoduino logic.
+// No Arduino framework needed; gingoduino_config.h provides PROGMEM stubs.
+//
+// Build (from repo root):
+//   g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -o extras/tests/test_native extras/tests/test_native.cpp
+
+#include <cstdio>
+#include <cstring>
+#include "src/Gingoduino.h"
+
+// Pull in all .cpp files for a single-file build
+#include "src/GingoNote.cpp"
+#include "src/GingoInterval.cpp"
+#include "src/GingoChord.cpp"
+#include "src/GingoScale.cpp"
+#include "src/GingoField.cpp"
+#include "src/GingoDuration.cpp"
+#include "src/GingoTempo.cpp"
+#include "src/GingoTimeSig.cpp"
+#include "src/GingoEvent.cpp"
+#include "src/GingoSequence.cpp"
+#include "src/GingoFretboard.cpp"
+
+using namespace gingoduino;
+
+static int failures = 0;
+static int tests = 0;
+
+#define CHECK(cond, msg) do { \
+    tests++; \
+    if (!(cond)) { \
+        printf("  FAIL: %s\n", msg); \
+        failures++; \
+    } else { \
+        printf("  OK:   %s\n", msg); \
+    } \
+} while(0)
+
+// =====================================================================
+// Note
+// =====================================================================
+
+void testNote() {
+    printf("\n=== GingoNote ===\n");
+
+    GingoNote c("C");
+    CHECK(strcmp(c.name(), "C") == 0, "C name");
+    CHECK(c.semitone() == 0, "C semitone=0");
+    CHECK(c.sound() == 'C', "C sound='C'");
+
+    GingoNote bb("Bb");
+    CHECK(strcmp(bb.natural(), "A#") == 0, "Bb natural=A#");
+    CHECK(bb.semitone() == 10, "Bb semitone=10");
+
+    GingoNote a("A");
+    CHECK(a.midiNumber(4) == 69, "A4 MIDI=69");
+    CHECK(c.midiNumber(4) == 60, "C4 MIDI=60");
+
+    float freqA = a.frequency(4);
+    CHECK(freqA > 439.0f && freqA < 441.0f, "A4 freq~440");
+
+    GingoNote g = c.transpose(7);
+    CHECK(strcmp(g.name(), "G") == 0, "C+7=G");
+
+    GingoNote aDown = c.transpose(-3);
+    CHECK(strcmp(aDown.name(), "A") == 0, "C-3=A");
+
+    CHECK(c.distance(GingoNote("G")) == 1, "C to G fifths dist=1");
+
+    GingoNote aSharp("A#");
+    CHECK(bb.isEnharmonic(aSharp), "Bb enharmonic A#");
+
+    GingoNote fSharp("F#");
+    CHECK(fSharp.semitone() == 6, "F# semitone=6");
+
+    GingoNote eFlat("Eb");
+    CHECK(strcmp(eFlat.natural(), "D#") == 0, "Eb natural=D#");
+}
+
+// =====================================================================
+// Interval
+// =====================================================================
+
+void testInterval() {
+    printf("\n=== GingoInterval ===\n");
+
+    GingoInterval p5(7);  // 7 semitones = perfect fifth
+    char buf[8];
+    CHECK(p5.semitones() == 7, "P5 semitones=7");
+    CHECK(strcmp(p5.label(buf, sizeof(buf)), "5J") == 0, "P5 label=5J");
+    CHECK(p5.degree() == 5, "P5 degree=5");
+
+    GingoInterval m3(3);  // minor third
+    CHECK(m3.semitones() == 3, "m3 semitones=3");
+    CHECK(strcmp(m3.label(buf, sizeof(buf)), "3m") == 0, "m3 label=3m");
+
+    GingoInterval fromLabel("3M");
+    CHECK(fromLabel.semitones() == 4, "3M semitones=4");
+
+    // Two-note constructor
+    GingoInterval cToG(GingoNote("C"), GingoNote("G"));
+    CHECK(cToG.semitones() == 7, "C→G = 7 semitones");
+
+    // Octave & compound
+    GingoInterval oct((uint8_t)12);
+    CHECK(oct.octave() == 2, "octave=2 for 12st");
+    CHECK(oct.isCompound(), "12st is compound");
+
+    // Simple reduction
+    GingoInterval b9((uint8_t)13);
+    GingoInterval simple = b9.simple();
+    CHECK(simple.semitones() == 1, "b9 simple = 1st");
+
+    // Invert
+    GingoInterval inv = p5.invert();
+    CHECK(inv.semitones() == 5, "P5 invert = 5st (P4)");
+}
+
+void testIntervalExtended() {
+    printf("\n=== GingoInterval (extended) ===\n");
+    char buf[32];
+
+    // Consonance
+    GingoInterval p1((uint8_t)0);
+    p1.consonance(buf, sizeof(buf));
+    CHECK(strcmp(buf, "perfect") == 0, "P1 consonance=perfect");
+    CHECK(p1.isConsonant(), "P1 is consonant");
+
+    GingoInterval m3(3);
+    m3.consonance(buf, sizeof(buf));
+    CHECK(strcmp(buf, "imperfect") == 0, "m3 consonance=imperfect");
+    CHECK(m3.isConsonant(), "m3 is consonant");
+
+    GingoInterval m2(1);
+    m2.consonance(buf, sizeof(buf));
+    CHECK(strcmp(buf, "dissonant") == 0, "m2 consonance=dissonant");
+    CHECK(!m2.isConsonant(), "m2 is not consonant");
+
+    // Full names
+    GingoInterval p5(7);
+    p5.fullName(buf, sizeof(buf));
+    CHECK(strcmp(buf, "Perfect Fifth") == 0, "P5 fullName=Perfect Fifth");
+
+    p5.fullNamePt(buf, sizeof(buf));
+    CHECK(strcmp(buf, "Quinta Justa") == 0, "P5 fullNamePt=Quinta Justa");
+
+    GingoInterval M3(4);
+    M3.fullName(buf, sizeof(buf));
+    CHECK(strcmp(buf, "Major Third") == 0, "M3 fullName=Major Third");
+
+    M3.fullNamePt(buf, sizeof(buf));
+    CHECK(strcmp(buf, "Terca Maior") == 0, "M3 fullNamePt=Terca Maior");
+
+    // Operators
+    GingoInterval sum = m3 + p5;
+    CHECK(sum.semitones() == 10, "m3 + P5 = 10st");
+
+    GingoInterval diff = p5 - m3;
+    CHECK(diff.semitones() == 4, "P5 - m3 = 4st");
+
+    GingoInterval underflow = m3 - p5;
+    CHECK(underflow.semitones() == 0, "m3 - P5 = 0st (floor)");
+
+    // Sum cap at 23
+    GingoInterval big1((uint8_t)20);
+    GingoInterval big2((uint8_t)10);
+    GingoInterval capped = big1 + big2;
+    CHECK(capped.semitones() == 23, "20 + 10 capped at 23");
+}
+
+// =====================================================================
+// Chord
+// =====================================================================
+
+void testChord() {
+    printf("\n=== GingoChord ===\n");
+
+    GingoChord cMaj("CM");
+    CHECK(strcmp(cMaj.name(), "CM") == 0, "CM name");
+    CHECK(strcmp(cMaj.root().name(), "C") == 0, "CM root=C");
+    CHECK(cMaj.size() == 3, "CM size=3");
+
+    GingoNote notes[7];
+    uint8_t n = cMaj.notes(notes, 7);
+    CHECK(n == 3, "CM notes count=3");
+    CHECK(strcmp(notes[0].name(), "C") == 0, "CM note[0]=C");
+    CHECK(strcmp(notes[1].name(), "E") == 0, "CM note[1]=E");
+    CHECK(strcmp(notes[2].name(), "G") == 0, "CM note[2]=G");
+
+    GingoChord dm7("Dm7");
+    CHECK(dm7.size() == 4, "Dm7 size=4");
+    n = dm7.notes(notes, 7);
+    CHECK(strcmp(notes[0].name(), "D") == 0, "Dm7 note[0]=D");
+    CHECK(strcmp(notes[1].name(), "F") == 0, "Dm7 note[1]=F");
+
+    CHECK(dm7.contains(GingoNote("F")), "Dm7 contains F");
+    CHECK(!dm7.contains(GingoNote("F#")), "Dm7 !contains F#");
+
+    // Transpose
+    GingoChord transposed = cMaj.transpose(5);
+    CHECK(strcmp(transposed.root().name(), "F") == 0, "CM+5 root=F");
+
+    // Identify
+    GingoNote testNotes[3] = {GingoNote("C"), GingoNote("E"), GingoNote("G")};
+    char identified[16];
+    bool found = GingoChord::identify(testNotes, 3, identified, sizeof(identified));
+    CHECK(found, "identify [C,E,G] found");
+    if (found) {
+        printf("         identified as: %s\n", identified);
+    }
+}
+
+void testChordIntervals() {
+    printf("\n=== GingoChord intervals() ===\n");
+
+    GingoChord cMaj("CM");
+    GingoInterval ivs[7];
+    uint8_t n = cMaj.intervals(ivs, 7);
+    CHECK(n == 3, "CM intervals count=3");
+    CHECK(ivs[0].semitones() == 0, "CM interval[0]=P1 (0st)");
+    CHECK(ivs[1].semitones() == 4, "CM interval[1]=M3 (4st)");
+    CHECK(ivs[2].semitones() == 7, "CM interval[2]=P5 (7st)");
+
+    GingoChord dm7("Dm7");
+    n = dm7.intervals(ivs, 7);
+    CHECK(n == 4, "Dm7 intervals count=4");
+    CHECK(ivs[3].semitones() == 10, "Dm7 interval[3]=m7 (10st)");
+
+    char buf[8];
+    ivs[1].label(buf, sizeof(buf));
+    printf("         CM interval[1] label: %s\n", buf);
+}
+
+// =====================================================================
+// Scale
+// =====================================================================
+
+void testScale() {
+    printf("\n=== GingoScale ===\n");
+
+    GingoScale cMaj("C", SCALE_MAJOR);
+    CHECK(strcmp(cMaj.tonic().name(), "C") == 0, "C Major tonic=C");
+    CHECK(cMaj.size() == 7, "C Major size=7");
+
+    GingoNote notes[12];
+    uint8_t n = cMaj.notes(notes, 12);
+    CHECK(n == 7, "C Major notes count=7");
+    printf("         C Major notes: ");
+    for (uint8_t i = 0; i < n; i++) printf("%s ", notes[i].name());
+    printf("\n");
+
+    CHECK(strcmp(notes[0].name(), "C") == 0, "C Major[0]=C");
+    CHECK(strcmp(notes[4].name(), "G") == 0, "C Major[4]=G");
+
+    // Degree
+    CHECK(strcmp(cMaj.degree(5).name(), "G") == 0, "C Major degree(5)=G");
+
+    // Contains
+    CHECK(cMaj.contains(GingoNote("F")), "C Major contains F");
+    CHECK(!cMaj.contains(GingoNote("F#")), "C Major !contains F#");
+
+    // Mode
+    GingoScale dorian = cMaj.mode(2);
+    n = dorian.notes(notes, 12);
+    printf("         D Dorian notes: ");
+    for (uint8_t i = 0; i < n; i++) printf("%s ", notes[i].name());
+    printf("\n");
+    CHECK(strcmp(dorian.tonic().name(), "D") == 0, "Dorian tonic=D");
+
+    char modeBuf[20];
+    CHECK(strcmp(dorian.modeName(modeBuf, sizeof(modeBuf)), "Dorian") == 0, "Dorian modeName");
+
+    // Quality
+    CHECK(strcmp(cMaj.quality(), "major") == 0, "C Major quality=major");
+
+    // Pentatonic
+    GingoScale penta = cMaj.pentatonic();
+    n = penta.notes(notes, 12);
+    printf("         C Penta notes: ");
+    for (uint8_t i = 0; i < n; i++) printf("%s ", notes[i].name());
+    printf("\n");
+    CHECK(n == 5, "C Penta size=5");
+
+    // By name
+    GingoScale blues("A", "blues");
+    n = blues.notes(notes, 12);
+    printf("         A Blues notes: ");
+    for (uint8_t i = 0; i < n; i++) printf("%s ", notes[i].name());
+    printf("\n");
+}
+
+void testScaleExtended() {
+    printf("\n=== GingoScale (extended) ===\n");
+
+    GingoScale cMaj("C", SCALE_MAJOR);
+
+    // Signature
+    CHECK(cMaj.signature() == 0, "C Major signature=0");
+
+    GingoScale gMaj("G", SCALE_MAJOR);
+    CHECK(gMaj.signature() == 1, "G Major signature=1");
+
+    GingoScale fMaj("F", SCALE_MAJOR);
+    CHECK(fMaj.signature() == -1, "F Major signature=-1");
+
+    // DegreeOf
+    CHECK(cMaj.degreeOf(GingoNote("C")) == 1, "C Major degreeOf(C)=1");
+    CHECK(cMaj.degreeOf(GingoNote("G")) == 5, "C Major degreeOf(G)=5");
+    CHECK(cMaj.degreeOf(GingoNote("F#")) == 0, "C Major degreeOf(F#)=0");
+
+    // Relative
+    GingoScale rel = cMaj.relative();
+    CHECK(strcmp(rel.tonic().name(), "A") == 0, "C Major relative tonic=A");
+    CHECK(strcmp(rel.quality(), "minor") == 0, "C Major relative quality=minor");
+
+    // Parallel
+    GingoScale par = cMaj.parallel();
+    CHECK(strcmp(par.tonic().name(), "C") == 0, "C Major parallel tonic=C");
+    CHECK(strcmp(par.quality(), "minor") == 0, "C Major parallel quality=minor");
+
+    // Brightness
+    uint8_t br = cMaj.brightness();
+    CHECK(br == 5, "C Ionian brightness=5");
+
+    GingoScale dorian("D", "dorian");
+    CHECK(dorian.brightness() == 3, "D Dorian brightness=3");
+
+    // Mask
+    uint16_t mask = cMaj.mask();
+    CHECK((mask & 1) != 0, "C Major mask has bit 0 (root)");
+    CHECK((mask & (1 << 6)) == 0, "C Major mask lacks bit 6 (tritone)");
+    printf("         C Major mask: 0x%03X\n", mask);
+
+    // ModeByName
+    GingoScale lydian = cMaj.modeByName("lydian");
+    CHECK(strcmp(lydian.quality(), "major") == 0, "lydian quality=major");
+    CHECK(lydian.modeNumber() == 4, "lydian modeNumber=4");
+}
+
+// =====================================================================
+// Field
+// =====================================================================
+
+void testField() {
+    printf("\n=== GingoField ===\n");
+
+    GingoField field("C", SCALE_MAJOR);
+    CHECK(field.size() == 7, "C Major field size=7");
+
+    GingoChord triads[7];
+    uint8_t nt = field.chords(triads, 7);
+    printf("         C Major triads: ");
+    for (uint8_t i = 0; i < nt; i++) printf("%s ", triads[i].name());
+    printf("\n");
+    CHECK(nt == 7, "C Major triads count=7");
+
+    GingoChord sevs[7];
+    uint8_t ns = field.sevenths(sevs, 7);
+    printf("         C Major 7ths:   ");
+    for (uint8_t i = 0; i < ns; i++) printf("%s ", sevs[i].name());
+    printf("\n");
+
+    // Functions
+    CHECK(field.function(1) == FUNC_TONIC, "I = tonic");
+    CHECK(field.function(5) == FUNC_DOMINANT, "V = dominant");
+
+    // Single degree
+    GingoChord v = field.chord(5);
+    printf("         V chord: %s\n", v.name());
+}
+
+void testFieldExtended() {
+    printf("\n=== GingoField (extended) ===\n");
+
+    GingoField field("C", SCALE_MAJOR);
+
+    // Signature
+    CHECK(field.signature() == 0, "C Major field signature=0");
+
+    // FunctionOf by chord
+    GingoChord gM("GM");
+    CHECK(field.functionOf(gM) == FUNC_DOMINANT, "functionOf(GM)=dominant");
+
+    GingoChord cM("CM");
+    CHECK(field.functionOf(cM) == FUNC_TONIC, "functionOf(CM)=tonic");
+
+    // FunctionOf by name
+    CHECK(field.functionOf("Dm7") == FUNC_SUBDOMINANT, "functionOf('Dm7')=subdominant");
+
+    // RoleOf
+    char buf[20];
+    field.roleOf(cM, buf, sizeof(buf));
+    CHECK(strcmp(buf, "primary") == 0, "roleOf(CM)=primary");
+
+    field.roleOf("Em", buf, sizeof(buf));
+    CHECK(strcmp(buf, "transitive") == 0, "roleOf('Em')=transitive");
+}
+
+// =====================================================================
+// Duration
+// =====================================================================
+
+void testDuration() {
+    printf("\n=== GingoDuration ===\n");
+
+    GingoDuration quarter("quarter");
+    CHECK(quarter.numerator() == 1 && quarter.denominator() == 4, "quarter=1/4");
+    CHECK(quarter.beats() == 1.0f, "quarter beats=1");
+
+    GingoDuration whole("whole");
+    CHECK(whole.numerator() == 1 && whole.denominator() == 1, "whole=1/1");
+    CHECK(whole.beats() == 4.0f, "whole beats=4");
+
+    GingoDuration eighth("eighth");
+    CHECK(eighth.beats() == 0.5f, "eighth beats=0.5");
+
+    // Dotted quarter
+    GingoDuration dotQ("quarter", 1);
+    CHECK(dotQ.beats() == 1.5f, "dotted quarter beats=1.5");
+
+    // Triplet quarter
+    GingoDuration tripQ("quarter", 0, 3);
+    float tripBeats = tripQ.beats();
+    CHECK(tripBeats > 0.66f && tripBeats < 0.67f, "triplet quarter beats~0.667");
+
+    // Rational constructor
+    GingoDuration rational(3, 8);
+    CHECK(rational.numerator() == 3 && rational.denominator() == 8, "rational 3/8");
+
+    char nameBuf[16];
+    quarter.name(nameBuf, sizeof(nameBuf));
+    CHECK(strcmp(nameBuf, "quarter") == 0, "quarter name()");
+}
+
+void testDurationExtended() {
+    printf("\n=== GingoDuration (extended) ===\n");
+
+    GingoDuration quarter("quarter");
+    GingoDuration eighth("eighth");
+
+    // operator+
+    GingoDuration sum = quarter + eighth;
+    float sumBeats = sum.beats();
+    CHECK(sumBeats > 1.49f && sumBeats < 1.51f, "quarter + eighth = 1.5 beats");
+
+    // operator<
+    CHECK(eighth < quarter, "eighth < quarter");
+    CHECK(!(quarter < eighth), "!(quarter < eighth)");
+    CHECK(!(quarter < quarter), "!(quarter < quarter)");
+
+    // operator>
+    CHECK(quarter > eighth, "quarter > eighth");
+
+    // operator<=
+    CHECK(eighth <= quarter, "eighth <= quarter");
+    CHECK(quarter <= quarter, "quarter <= quarter");
+
+    // Sum of two quarters
+    GingoDuration half = quarter + quarter;
+    CHECK(half.beats() == 2.0f, "quarter + quarter = 2.0 beats");
+}
+
+// =====================================================================
+// Tempo
+// =====================================================================
+
+void testTempo() {
+    printf("\n=== GingoTempo ===\n");
+
+    GingoTempo t120(120.0f);
+    CHECK(t120.bpm() == 120.0f, "120 bpm");
+
+    float ms = t120.msPerBeat();
+    CHECK(ms == 500.0f, "120bpm msPerBeat=500");
+
+    char buf[14];
+    t120.marking(buf, sizeof(buf));
+    printf("         120 BPM marking: %s\n", buf);
+
+    // From marking
+    GingoTempo adagio("Adagio");
+    printf("         Adagio BPM: %.0f\n", adagio.bpm());
+    CHECK(adagio.bpm() > 50 && adagio.bpm() < 80, "Adagio bpm in range");
+
+    // Seconds
+    GingoDuration quarter("quarter");
+    float secs = t120.seconds(quarter);
+    CHECK(secs == 0.5f, "120bpm quarter=0.5s");
+}
+
+// =====================================================================
+// TimeSignature
+// =====================================================================
+
+void testTimeSig() {
+    printf("\n=== GingoTimeSig ===\n");
+
+    GingoTimeSig ts44(4, 4);
+    CHECK(ts44.beatsPerBar() == 4, "4/4 beats=4");
+    CHECK(ts44.beatUnit() == 4, "4/4 unit=4");
+    CHECK(!ts44.isCompound(), "4/4 not compound");
+
+    char buf[16];
+    ts44.commonName(buf, sizeof(buf));
+    CHECK(strcmp(buf, "common time") == 0, "4/4 common time");
+
+    ts44.toString(buf, sizeof(buf));
+    CHECK(strcmp(buf, "4/4") == 0, "4/4 toString");
+
+    GingoTimeSig ts68(6, 8);
+    CHECK(ts68.isCompound(), "6/8 compound");
+
+    GingoTimeSig ts22(2, 2);
+    ts22.commonName(buf, sizeof(buf));
+    CHECK(strcmp(buf, "cut time") == 0, "2/2 cut time");
+
+    // Bar duration
+    GingoDuration bar44 = ts44.barDuration();
+    CHECK(bar44.numerator() == 4 && bar44.denominator() == 4, "4/4 bar=4/4");
+    CHECK(bar44.beats() == 4.0f, "4/4 bar beats=4");
+
+    GingoDuration bar68 = ts68.barDuration();
+    CHECK(bar68.numerator() == 6 && bar68.denominator() == 8, "6/8 bar=6/8");
+    float b68 = bar68.beats();
+    CHECK(b68 == 3.0f, "6/8 bar beats=3");
+
+    // Classification
+    ts44.classification(buf, sizeof(buf));
+    CHECK(strcmp(buf, "simple") == 0, "4/4 classification=simple");
+
+    ts68.classification(buf, sizeof(buf));
+    CHECK(strcmp(buf, "compound") == 0, "6/8 classification=compound");
+}
+
+// =====================================================================
+// Event (Tier 3)
+// =====================================================================
+
+void testEvent() {
+    printf("\n=== GingoEvent ===\n");
+
+    // Note event
+    GingoEvent ne = GingoEvent::noteEvent(GingoNote("C"), GingoDuration("quarter"), 4);
+    CHECK(ne.type() == EVENT_NOTE, "noteEvent type=NOTE");
+    CHECK(strcmp(ne.note().name(), "C") == 0, "noteEvent note=C");
+    CHECK(ne.octave() == 4, "noteEvent octave=4");
+    CHECK(ne.midiNumber() == 60, "noteEvent midi=60");
+
+    float freq = ne.frequency();
+    CHECK(freq > 260.0f && freq < 263.0f, "noteEvent freq~261.6 (C4)");
+
+    // Chord event
+    GingoEvent ce = GingoEvent::chordEvent(GingoChord("CM"), GingoDuration("half"), 3);
+    CHECK(ce.type() == EVENT_CHORD, "chordEvent type=CHORD");
+    CHECK(strcmp(ce.chord().name(), "CM") == 0, "chordEvent chord=CM");
+    CHECK(ce.octave() == 3, "chordEvent octave=3");
+
+    // Rest event
+    GingoEvent re = GingoEvent::rest(GingoDuration("whole"));
+    CHECK(re.type() == EVENT_REST, "rest type=REST");
+    CHECK(re.midiNumber() == 0, "rest midi=0");
+
+    // Transpose
+    GingoEvent transposed = ne.transpose(7);
+    CHECK(strcmp(transposed.note().name(), "G") == 0, "noteEvent+7 = G");
+    CHECK(transposed.midiNumber() == 67, "noteEvent+7 midi=67");
+}
+
+// =====================================================================
+// Sequence (Tier 3)
+// =====================================================================
+
+void testSequence() {
+    printf("\n=== GingoSequence ===\n");
+
+    GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
+    CHECK(seq.empty(), "new sequence is empty");
+    CHECK(seq.size() == 0, "new sequence size=0");
+
+    // Add events
+    seq.add(GingoEvent::noteEvent(GingoNote("C"), GingoDuration("quarter"), 4));
+    seq.add(GingoEvent::noteEvent(GingoNote("E"), GingoDuration("quarter"), 4));
+    seq.add(GingoEvent::rest(GingoDuration("half")));
+    CHECK(seq.size() == 3, "sequence size=3");
+    CHECK(!seq.empty(), "sequence not empty");
+
+    // Total beats
+    float beats = seq.totalBeats();
+    CHECK(beats == 4.0f, "totalBeats=4.0 (q+q+h)");
+
+    // Total seconds (120 BPM, 4 beats = 2 seconds)
+    float secs = seq.totalSeconds();
+    CHECK(secs > 1.99f && secs < 2.01f, "totalSeconds~2.0");
+
+    // Bar count
+    float bars = seq.barCount();
+    CHECK(bars > 0.99f && bars < 1.01f, "barCount~1.0");
+
+    // At
+    const GingoEvent& e0 = seq.at(0);
+    CHECK(e0.type() == EVENT_NOTE, "at(0) type=NOTE");
+    CHECK(strcmp(e0.note().name(), "C") == 0, "at(0) note=C");
+
+    // Remove
+    seq.remove(1);
+    CHECK(seq.size() == 2, "after remove size=2");
+
+    // Transpose
+    seq.transpose(5);
+    CHECK(strcmp(seq.at(0).note().name(), "F") == 0, "after transpose(5) note=F");
+
+    // Clear
+    seq.clear();
+    CHECK(seq.empty(), "after clear is empty");
+}
+
+// =====================================================================
+// Fretboard
+// =====================================================================
+
+void testFretboard() {
+    printf("\n=== GingoFretboard ===\n");
+
+    // Violao (guitar)
+    GingoFretboard guitar = GingoFretboard::violao();
+    CHECK(guitar.numStrings() == 6, "violao numStrings=6");
+    CHECK(guitar.numFrets() == 19, "violao numFrets=19");
+    CHECK(strcmp(guitar.name(), "Violao") == 0, "violao name");
+
+    // Open string MIDI
+    CHECK(guitar.openMidi(0) == 40, "open E2 = MIDI 40");
+    CHECK(guitar.openMidi(5) == 64, "open E4 = MIDI 64");
+
+    // Note at position
+    GingoNote n = guitar.noteAt(0, 5);
+    CHECK(strcmp(n.name(), "A") == 0, "string 0 fret 5 = A");
+
+    n = guitar.noteAt(1, 0);
+    CHECK(strcmp(n.name(), "A") == 0, "string 1 open = A");
+
+    // MIDI at position
+    CHECK(guitar.midiAt(0, 0) == 40, "midiAt(0,0)=40 (E2)");
+    CHECK(guitar.midiAt(0, 12) == 52, "midiAt(0,12)=52 (E3)");
+
+    // Position struct
+    GingoFretPos pos = guitar.position(0, 5);
+    CHECK(pos.string == 0, "pos.string=0");
+    CHECK(pos.fret == 5, "pos.fret=5");
+    CHECK(pos.midi == 45, "pos.midi=45");
+
+    // Find positions of a note
+    GingoFretPos positions[48];
+    uint8_t count = guitar.positions(GingoNote("E"), positions, 48);
+    CHECK(count > 0, "E positions found on guitar");
+    printf("         E on guitar: %d positions\n", count);
+
+    // Scale positions
+    GingoScale cMaj("C", SCALE_MAJOR);
+    count = guitar.scalePositions(cMaj, positions, 48, 0, 4);
+    CHECK(count > 0, "C Major positions (frets 0-4)");
+    printf("         C Major (frets 0-4): %d positions\n", count);
+
+    // Fingering
+    GingoFingering fg;
+    bool found = guitar.fingering(GingoChord("CM"), 0, fg);
+    CHECK(found, "CM fingering found at pos 0");
+    if (found) {
+        printf("         CM fingering: score=%d notes=%d\n", fg.score, fg.numNotes);
+    }
+
+    // Multiple fingerings
+    GingoFingering fgs[5];
+    uint8_t nfg = guitar.fingerings(GingoChord("CM"), fgs, 5);
+    CHECK(nfg > 0, "CM has at least 1 fingering");
+    printf("         CM fingerings found: %d\n", nfg);
+
+    // Identify from fret positions
+    uint8_t frets[6] = { 255, 0, 2, 2, 1, 0 };  // x02210 = Am
+    char chordName[16];
+    bool identified = guitar.identify(frets, 6, chordName, sizeof(chordName));
+    if (identified) {
+        printf("         x02210 identified as: %s\n", chordName);
+    }
+
+    // Capo
+    GingoFretboard capo2 = guitar.capo(2);
+    CHECK(capo2.openMidi(0) == 42, "capo 2 open E2 = MIDI 42 (F#2)");
+    n = capo2.noteAt(0, 0);
+    CHECK(strcmp(n.name(), "F#") == 0, "capo 2 string 0 open = F#");
+
+    // Cavaquinho
+    GingoFretboard cav = GingoFretboard::cavaquinho();
+    CHECK(cav.numStrings() == 4, "cavaquinho numStrings=4");
+    CHECK(strcmp(cav.name(), "Cavaquinho") == 0, "cavaquinho name");
+
+    // Ukulele
+    GingoFretboard uke = GingoFretboard::ukulele();
+    CHECK(uke.numStrings() == 4, "ukulele numStrings=4");
+    CHECK(strcmp(uke.name(), "Ukulele") == 0, "ukulele name");
+}
+
+// =====================================================================
+// Main
+// =====================================================================
+
+int main() {
+    printf("Gingoduino Native Test\n");
+    printf("======================\n");
+
+    testNote();
+    testInterval();
+    testIntervalExtended();
+    testChord();
+    testChordIntervals();
+    testScale();
+    testScaleExtended();
+    testField();
+    testFieldExtended();
+    testDuration();
+    testDurationExtended();
+    testTempo();
+    testTimeSig();
+    testEvent();
+    testSequence();
+    testFretboard();
+
+    printf("\n======================\n");
+    printf("Tests: %d  Passed: %d  Failed: %d\n", tests, tests - failures, failures);
+    return failures > 0 ? 1 : 0;
+}

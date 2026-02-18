@@ -1,0 +1,168 @@
+# Gingoduino — Arduino IDE Syntax Highlighting
+# KEYWORD1 = Classes (orange)
+# KEYWORD2 = Methods (brown)
+# LITERAL1 = Constants (blue)
+
+# Classes
+Gingoduino	KEYWORD1
+GingoNote	KEYWORD1
+GingoInterval	KEYWORD1
+GingoChord	KEYWORD1
+GingoScale	KEYWORD1
+GingoField	KEYWORD1
+GingoDuration	KEYWORD1
+GingoTempo	KEYWORD1
+GingoTimeSig	KEYWORD1
+GingoEvent	KEYWORD1
+GingoSequence	KEYWORD1
+GingoFretboard	KEYWORD1
+GingoFretPos	KEYWORD1
+GingoFingering	KEYWORD1
+GingoStringState	KEYWORD1
+
+# GingoNote methods
+name	KEYWORD2
+natural	KEYWORD2
+sound	KEYWORD2
+semitone	KEYWORD2
+frequency	KEYWORD2
+transpose	KEYWORD2
+distance	KEYWORD2
+isEnharmonic	KEYWORD2
+midiNumber	KEYWORD2
+
+# GingoInterval methods
+label	KEYWORD2
+angloSaxon	KEYWORD2
+semitones	KEYWORD2
+degree	KEYWORD2
+octave	KEYWORD2
+simple	KEYWORD2
+invert	KEYWORD2
+isCompound	KEYWORD2
+consonance	KEYWORD2
+isConsonant	KEYWORD2
+fullName	KEYWORD2
+fullNamePt	KEYWORD2
+
+# GingoChord methods
+root	KEYWORD2
+type	KEYWORD2
+size	KEYWORD2
+notes	KEYWORD2
+intervalLabels	KEYWORD2
+intervals	KEYWORD2
+contains	KEYWORD2
+identify	KEYWORD2
+formulaIndex	KEYWORD2
+
+# GingoScale methods
+tonic	KEYWORD2
+parent	KEYWORD2
+modeNumber	KEYWORD2
+modeName	KEYWORD2
+mode	KEYWORD2
+pentatonic	KEYWORD2
+isPentatonic	KEYWORD2
+quality	KEYWORD2
+signature	KEYWORD2
+relative	KEYWORD2
+parallel	KEYWORD2
+degreeOf	KEYWORD2
+modeByName	KEYWORD2
+brightness	KEYWORD2
+mask	KEYWORD2
+
+# GingoField methods
+chords	KEYWORD2
+sevenths	KEYWORD2
+chord	KEYWORD2
+seventh	KEYWORD2
+function	KEYWORD2
+role	KEYWORD2
+functionOf	KEYWORD2
+roleOf	KEYWORD2
+
+# GingoDuration methods
+dots	KEYWORD2
+tuplet	KEYWORD2
+beats	KEYWORD2
+numerator	KEYWORD2
+denominator	KEYWORD2
+
+# GingoTempo methods
+bpm	KEYWORD2
+marking	KEYWORD2
+seconds	KEYWORD2
+msPerBeat	KEYWORD2
+secondsPerBeat	KEYWORD2
+
+# GingoTimeSig methods
+beatsPerBar	KEYWORD2
+beatUnit	KEYWORD2
+barDuration	KEYWORD2
+commonName	KEYWORD2
+classification	KEYWORD2
+
+# GingoEvent methods
+noteEvent	KEYWORD2
+chordEvent	KEYWORD2
+rest	KEYWORD2
+
+# GingoSequence methods
+add	KEYWORD2
+remove	KEYWORD2
+clear	KEYWORD2
+empty	KEYWORD2
+at	KEYWORD2
+totalBeats	KEYWORD2
+totalSeconds	KEYWORD2
+barCount	KEYWORD2
+setTempo	KEYWORD2
+setTimeSignature	KEYWORD2
+tempo	KEYWORD2
+timeSignature	KEYWORD2
+
+# GingoFretboard methods & factories
+violao	KEYWORD2
+cavaquinho	KEYWORD2
+bandolim	KEYWORD2
+ukulele	KEYWORD2
+numStrings	KEYWORD2
+numFrets	KEYWORD2
+openMidi	KEYWORD2
+position	KEYWORD2
+noteAt	KEYWORD2
+midiAt	KEYWORD2
+positions	KEYWORD2
+scalePositions	KEYWORD2
+fingering	KEYWORD2
+fingerings	KEYWORD2
+capo	KEYWORD2
+
+# Scale type constants
+SCALE_MAJOR	LITERAL1
+SCALE_NATURAL_MINOR	LITERAL1
+SCALE_HARMONIC_MINOR	LITERAL1
+SCALE_MELODIC_MINOR	LITERAL1
+SCALE_DIMINISHED	LITERAL1
+SCALE_HARMONIC_MAJOR	LITERAL1
+SCALE_WHOLE_TONE	LITERAL1
+SCALE_AUGMENTED	LITERAL1
+SCALE_BLUES	LITERAL1
+SCALE_CHROMATIC	LITERAL1
+
+# Harmonic function constants
+FUNC_TONIC	LITERAL1
+FUNC_SUBDOMINANT	LITERAL1
+FUNC_DOMINANT	LITERAL1
+
+# Event type constants
+EVENT_NOTE	LITERAL1
+EVENT_CHORD	LITERAL1
+EVENT_REST	LITERAL1
+
+# String action constants
+STRING_OPEN	LITERAL1
+STRING_FRETTED	LITERAL1
+STRING_MUTED	LITERAL1
