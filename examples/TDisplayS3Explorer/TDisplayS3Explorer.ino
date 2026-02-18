@@ -94,6 +94,9 @@ struct AudioEngine {
 static AudioEngine engine;
 static TaskHandle_t audioTaskHandle = NULL;
 
+// Pre-allocated global sequence (avoids stack overflow in drawSequencePage)
+static GingoSequence g_seq(GingoTempo(120), GingoTimeSig(4, 4));
+
 // ADSR presets (converted to per-sample rates in initADSR)
 static void setADSR(float attackMs, float decayMs, float sustainLvl, float releaseMs) {
     engine.adsr.attackRate  = 1.0f / (attackMs  * SAMPLE_RATE / 1000.0f);
@@ -1020,10 +1023,9 @@ void drawSequencePage() {
     uint8_t idx = itemIdx % SEQ_PRESETS_SIZE;
     const SeqPreset& sp = SEQ_PRESETS[idx];
 
-    GingoTempo tempo(sp.bpm);
-    GingoTimeSig timeSig(sp.beatsPerBar, sp.beatUnit);
-    GingoSequence seq(tempo, timeSig);
-    buildPresetSequence(idx, seq);
+    g_seq.setTempo(GingoTempo(sp.bpm));
+    g_seq.setTimeSignature(GingoTimeSig(sp.beatsPerBar, sp.beatUnit));
+    buildPresetSequence(idx, g_seq);
 
     // Preset name
     tft.setTextSize(2);
@@ -1047,9 +1049,9 @@ void drawSequencePage() {
     tft.print(classBuf);
 
     // Stats
-    float totalB = seq.totalBeats();
-    float totalS = seq.totalSeconds();
-    float bars = seq.barCount();
+    float totalB = g_seq.totalBeats();
+    float totalS = g_seq.totalSeconds();
+    float bars = g_seq.barCount();
 
     tft.setTextColor(C_TEXT, C_BG);
     tft.setCursor(180, 56);
@@ -1083,8 +1085,8 @@ void drawSequencePage() {
 
     // Event blocks
     float xOffset = 0;
-    for (uint8_t i = 0; i < seq.size(); i++) {
-        const GingoEvent& evt = seq.at(i);
+    for (uint8_t i = 0; i < g_seq.size(); i++) {
+        const GingoEvent& evt = g_seq.at(i);
         float beats = evt.duration().beats();
         int blockX = tlX + (int)(xOffset / totalB * tlW);
         int blockW = (int)(beats / totalB * tlW) - 2;
@@ -1125,7 +1127,7 @@ void drawSequencePage() {
     tft.setCursor(12, SCR_H - 34);
     tft.print("Events: ");
     tft.setTextColor(C_TEXT, C_BG);
-    tft.print(seq.size());
+    tft.print(g_seq.size());
     tft.setTextColor(C_DIM, C_BG);
     tft.print("  Duration: ");
     tft.setTextColor(C_TEXT, C_BG);
@@ -1483,20 +1485,20 @@ void triggerAudioForCurrentPage() {
             break;
         }
         case PAGE_CHORD: {
-            setADSR(10, 100, 0.6, 200);
+            setADSR(10, 150, 0.6, 300);
             uint8_t idx = itemIdx % CHORD_LIST_SIZE;
             GingoChord chord(CHORD_LIST[idx]);
-            playChord(chord, 4, 0, 20);
+            playChord(chord, 3, 1500, 30);
             break;
         }
         case PAGE_SCALE: {
-            setADSR(3, 30, 0.5, 50);
+            setADSR(5, 60, 0.6, 100);
             uint8_t idx = itemIdx % SCALE_LIST_SIZE;
             const ScaleEntry& se = SCALE_LIST[idx];
             GingoScale scale(se.tonic, se.type);
             GingoNote notes[12];
             uint8_t count = scale.notes(notes, 12);
-            scheduleArpeggio(notes, count, 4, 280, 20);
+            scheduleArpeggio(notes, count, 4, 400, 30);
             break;
         }
         case PAGE_FIELD: {
@@ -1506,7 +1508,27 @@ void triggerAudioForCurrentPage() {
             GingoField field(fe.tonic, fe.type);
             GingoChord chords[7];
             uint8_t count = field.chords(chords, 7);
-            scheduleProgression(chords, count, 4, 600, 15);
+            scheduleProgression(chords, count, 4, 900, 25);
+            break;
+        }
+        case PAGE_FRETBOARD: {
+            uint8_t idx = itemIdx % FRET_TOTAL_SIZE;
+            bool isScale = (idx >= FRET_CHORD_SIZE);
+            if (!isScale) {
+                // Chord mode
+                setADSR(10, 150, 0.6, 300);
+                GingoChord chord(FRET_CHORD_LIST[idx]);
+                playChord(chord, 3, 1500, 30);
+            } else {
+                // Scale mode
+                setADSR(5, 40, 0.5, 80);
+                uint8_t scaleIdx = idx - FRET_CHORD_SIZE;
+                const FretScaleEntry& se = FRET_SCALE_LIST[scaleIdx];
+                GingoScale scale(se.tonic, se.type);
+                GingoNote notes[12];
+                uint8_t count = scale.notes(notes, 12);
+                scheduleArpeggio(notes, count, 4, 350, 30);
+            }
             break;
         }
         case PAGE_SEQUENCE:
@@ -1585,12 +1607,11 @@ void loop() {
             } else {
                 uint8_t idx = itemIdx % SEQ_PRESETS_SIZE;
                 const SeqPreset& sp = SEQ_PRESETS[idx];
-                GingoTempo tempo(sp.bpm);
-                GingoTimeSig timeSig(sp.beatsPerBar, sp.beatUnit);
-                GingoSequence seq(tempo, timeSig);
-                buildPresetSequence(idx, seq);
+                g_seq.setTempo(GingoTempo(sp.bpm));
+                g_seq.setTimeSignature(GingoTimeSig(sp.beatsPerBar, sp.beatUnit));
+                buildPresetSequence(idx, g_seq);
                 setADSR(5, 50, 0.7, 100);
-                scheduleSequence(seq);
+                scheduleSequence(g_seq);
             }
             needRedraw = true;
         } else {
