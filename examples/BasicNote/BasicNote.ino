@@ -1,5 +1,7 @@
 // Gingoduino — BasicNote Example
 // Demonstrates GingoNote: creation, transposition, frequency, MIDI.
+//
+// SPDX-License-Identifier: MIT
 
 #include <Gingoduino.h>
 

@@ -2,75 +2,51 @@
   <img src="extras/gingoduino.png" alt="Gingoduino" width="480">
 </p>
 
-# 🪇 Gingo [duino]
+# Gingoduino
 
 **Music Theory Library for Embedded Systems**
 **Biblioteca de Teoria Musical para Sistemas Embarcados**
 
 ---
 
-## English Version
+## English
 
 ### Overview
 
-Gingoduino is a comprehensive music theory library for embedded systems, microcontrollers, and creative hardware. It brings expressive music theory concepts directly to Arduino, ESP32, Teensy, Daisy Seed, Raspberry Pi Pico, and other platforms.
+Gingoduino is a music theory library for embedded systems. It brings notes, intervals, chords, scales, harmonic fields, fretboard engine, musical events, and sequences to Arduino, ESP32, Teensy, Daisy Seed, Raspberry Pi Pico, and other platforms.
 
-Built as a port of the [gingo C++17 library](https://github.com/sauloverissimo/gingo), Gingoduino provides access to:
+Built as a port of the [gingo C++17 library](https://github.com/sauloverissimo/gingo). Zero-heap architecture, PROGMEM lookup tables, C++11 compatible.
 
-- **Notes** — Chromatic notes with frequency, MIDI, and transposition
-- **Intervals** — Musical intervals with naming and calculation
-- **Chords** — Common and extended chord types with note extraction
-- **Scales** — Major, minor, modal, and exotic scales
-- **Harmonic Fields** — Triads, sevenths, and harmonic functions (Tonic/Subdominant/Dominant)
-- **Rhythm** — Time signatures, durations, and tempo
+### Modules
+
+| Tier | Modules | Platforms |
+|------|---------|-----------|
+| 1 | Note, Interval, Chord | AVR (Uno, Nano) |
+| 2 | + Scale, Field, Duration, Tempo, TimeSig, Fretboard | ESP8266 |
+| 3 | + Event, Sequence | ESP32, RP2040, Teensy, Daisy Seed |
+
+Tiers auto-select based on platform, or override with `#define GINGODUINO_TIER N`.
 
 ### Features
 
-✨ **Rich Music Theory Support**
 - 12-note chromatic system with enharmonic equivalents
-- 20+ chord types (major, minor, seventh, diminished, augmented, etc.)
-- 40+ scale types and modes (major, minor, blues, whole tone, etc.)
-- Harmonic field analysis with functional harmony
-- Frequency calculations in Hz and MIDI note numbers
+- 42 chord formulas with reverse lookup (identify)
+- 40+ scale types and modes with signature, brightness, relative/parallel
+- Harmonic field analysis with T/S/D functions and roles
+- Fretboard engine: violao, cavaquinho, bandolim, ukulele with fingering scoring
+- Musical events (note, chord, rest) and sequences with tempo/time signature
+- Fixed-size arrays, no dynamic allocation, PROGMEM support
+- 177 native tests passing
 
-⚡ **Optimized for Embedded Systems**
-- Minimal memory footprint with configurable feature tiers
-- Fixed-size arrays (no dynamic allocation)
-- PROGMEM support for Arduino RAM efficiency
-- Compiles on AVR, ESP8266, ESP32, RP2040, Teensy, and more
+### Installation
 
-🎛️ **Tiered Architecture**
-- **Tier 1**: Notes, Intervals, Chords (minimal footprint)
-- **Tier 2**: + Scales, Fields, Durations, Tempo, Time Signatures
-- **Tier 3**: + Sequences, Events, Trees, Progressions (full features)
-- Tiers auto-select based on platform, or override manually
+**Arduino IDE Library Manager:**
+- Sketch > Include Library > Manage Libraries > Search `Gingoduino` > Install
 
-🔌 **Hardware Integration**
-- Works with displays (TFT_eSPI, Adafruit GFX, etc.)
-- MIDI output ready
-- Serial debugging included in examples
+**Manual:**
+- Download and copy to your Arduino libraries folder (`~/Arduino/libraries/`)
 
 ### Quick Start
-
-#### Installation
-
-1. **Via Arduino IDE Library Manager:**
-   - Open Arduino IDE → Sketch → Include Library → Manage Libraries
-   - Search for `Gingoduino`
-   - Click Install
-
-2. **Manual Installation:**
-   - Download this repository
-   - Copy the `gingoduino/` folder to your Arduino libraries directory:
-     - macOS: `~/Documents/Arduino/libraries/`
-     - Linux: `~/Arduino/libraries/`
-     - Windows: `Documents\Arduino\libraries\`
-
-3. **For ESP32 users (if needed):**
-   - Ensure your board package is installed
-   - Library auto-detects platform and loads appropriate tier
-
-#### Basic Usage
 
 ```cpp
 #include <Gingoduino.h>
@@ -80,305 +56,249 @@ using namespace gingoduino;
 void setup() {
     Serial.begin(9600);
 
-    // Create a note
     GingoNote note("C");
-
-    // Get properties
     Serial.println(note.name());           // "C"
-    Serial.println(note.semitone());       // 0
-    Serial.println(note.midiNumber(4));    // 60 (Middle C)
-    Serial.println(note.frequency(4), 2);  // 261.63 Hz
+    Serial.println(note.midiNumber(4));    // 60
+    Serial.println(note.frequency(4), 1);  // 261.6
 
-    // Transpose
-    GingoNote fifth = note.transpose(7);   // C + 7 semitones = G
+    GingoNote fifth = note.transpose(7);   // G
+
+    GingoChord chord("Cm7");
+    GingoNote notes[7];
+    uint8_t n = chord.notes(notes, 7);     // D, F, A, C
+
+    GingoScale scale("C", SCALE_MAJOR);
+    Serial.println(scale.signature());     // 0 (no sharps/flats)
+
+    GingoField field("C", SCALE_MAJOR);
+    GingoChord triads[7];
+    field.chords(triads, 7);               // CM, Dm, Em, FM, GM, Am, Bdim
 }
 
 void loop() {}
 ```
 
-#### Examples Included
-
-1. **BasicNote** — Note creation, transposition, MIDI, frequency
-2. **ChordNotes** — Extract notes from chords, interval analysis
-3. **ScaleExplorer** — Browse scales and modes
-4. **HarmonicField** — Triads, sevenths, and harmonic functions
-5. **TDisplayS3Explorer** — Interactive GUI on LilyGo T-Display S3 (170×320 TFT)
-
-Run any example via Arduino IDE: File → Examples → Gingoduino → [Example Name]
-
-### API Documentation
+### API Reference
 
 #### GingoNote
-
 ```cpp
 GingoNote note("C#");
-
-// Properties
 note.name();              // "C#"
-note.natural();           // "C"
+note.natural();           // "C" (sharp canonical)
 note.semitone();          // 1 (0-11)
-note.isSharp();           // true
-note.isFlat();            // false
-note.isNatural();         // false
+note.frequency(4);        // Hz (float)
+note.midiNumber(4);       // 0-127
+note.transpose(7);        // GingoNote
+note.distance(other);     // circle of fifths
+note.isEnharmonic(other); // bool
+```
 
-// Frequency & MIDI
-note.frequency(octave);   // Hz (float)
-note.midiNumber(octave);  // 0-127
-note.isEnharmonic(other); // Check if equivalent note
-
-// Transposition
-note.transpose(semitones);// Returns new GingoNote
-
-// Distance
-note.distance(other);     // Semitones between notes
+#### GingoInterval
+```cpp
+GingoInterval iv("5J");         // or GingoInterval(7) or GingoInterval(noteA, noteB)
+char buf[32];
+iv.label(buf, sizeof(buf));     // "5J"
+iv.semitones();                 // 7
+iv.degree();                    // 5
+iv.consonance(buf, sizeof(buf));// "perfect", "imperfect", or "dissonant"
+iv.isConsonant();               // true
+iv.fullName(buf, sizeof(buf));  // "Perfect Fifth"
+iv.fullNamePt(buf, sizeof(buf));// "Quinta Justa"
+iv.simple();                    // reduce compound to simple
+iv.invert();                    // complement within octave
+GingoInterval sum = iv + other; // capped at 23
 ```
 
 #### GingoChord
-
 ```cpp
 GingoChord chord("Cm7");
+chord.name();                         // "Cm7"
+chord.root();                         // GingoNote("C")
+chord.type();                         // "m7"
+chord.size();                         // 4
 
-// Properties
-chord.name();             // "Cm7"
-chord.root();             // GingoNote("C")
-chord.type();             // "m7" or full name
-chord.quality();          // "minor seventh"
-
-// Extract notes
 GingoNote notes[7];
-uint8_t count = chord.notes(notes, 7);  // Fill array with notes
+chord.notes(notes, 7);                // fill array with chord tones
 
-// Interval labels
-LabelStr labels[7];
-uint8_t count = chord.intervalLabels(labels, 7);  // "R", "3m", "5", "7m"
+GingoInterval ivs[7];
+chord.intervals(ivs, 7);              // GingoInterval objects
+
+chord.contains(GingoNote("F"));       // true
+chord.transpose(5);                   // GingoChord
+
+GingoNote arr[3] = {GingoNote("C"), GingoNote("E"), GingoNote("G")};
+char name[16];
+GingoChord::identify(arr, 3, name, 16); // "CM"
 ```
 
 #### GingoScale
-
 ```cpp
-GingoScale scale("A", SCALE_NATURAL_MINOR);
+GingoScale scale("C", SCALE_MAJOR);   // or GingoScale("C", "dorian")
+char buf[22];
+scale.modeName(buf, sizeof(buf));      // "Ionian"
+scale.quality();                       // "major" or "minor"
+scale.signature();                     // 0 (sharps>0, flats<0)
+scale.brightness();                    // 1-7 (higher = brighter)
+scale.mask();                          // 12-bit pitch-class mask
 
-// Properties
-scale.modeName(buf, size);  // "Natural Minor" (Aeolian)
-scale.quality();            // "minor"
-
-// Extract notes
 GingoNote notes[12];
-uint8_t count = scale.notes(notes, 12);
+scale.notes(notes, 12);               // fill with scale degrees
+scale.degree(5);                       // GingoNote at degree
+scale.degreeOf(GingoNote("G"));        // 5 (0 if not found)
+scale.contains(GingoNote("F"));        // true
 
-// Pentatonic variant
-GingoScale penta = scale.pentatonic();
-uint8_t pentaCount = penta.notes(pentaNotes, 12);
+scale.mode(2);                         // Dorian
+scale.pentatonic();                    // pentatonic version
+scale.relative();                      // relative major/minor
+scale.parallel();                      // parallel major/minor
 ```
 
 #### GingoField
-
 ```cpp
 GingoField field("C", SCALE_MAJOR);
-
-// Get triads (I, II, III, IV, V, VI, VII)
 GingoChord triads[7];
-uint8_t count = field.chords(triads, 7);
+field.chords(triads, 7);              // CM, Dm, Em, FM, GM, Am, Bdim
+GingoChord sevs[7];
+field.sevenths(sevs, 7);              // C7M, Dm7, Em7, F7M, G7, Am7, Bm7(b5)
 
-// Get seventh chords
-GingoChord sevenths[7];
-uint8_t count = field.sevenths(sevenths, 7);
+field.function(5);                     // FUNC_DOMINANT
+char buf[12];
+field.role(1, buf, sizeof(buf));       // "primary"
 
-// Get harmonic function
-uint8_t function = field.function(degree);  // FUNC_TONIC, FUNC_SUBDOMINANT, FUNC_DOMINANT
+field.functionOf(GingoChord("GM"));    // FUNC_DOMINANT
+field.functionOf("Dm7");               // FUNC_SUBDOMINANT
+field.roleOf("Em", buf, sizeof(buf));  // "transitive"
+field.signature();                     // 0
 ```
 
-### Supported Chord Types
-
-- **Triads**: M, m, dim, aug
-- **Sevenths**: 7, M7, m7, m7(b5), dim7
-- **Extended**: 9, 11, 13 (partial support)
-- **Alterations**: sus2, sus4, add9, etc.
-
-### Supported Scale Types
-
+#### GingoFretboard
 ```cpp
-SCALE_MAJOR
-SCALE_NATURAL_MINOR
-SCALE_HARMONIC_MINOR
-SCALE_MELODIC_MINOR
-SCALE_IONIAN
-SCALE_DORIAN
-SCALE_PHRYGIAN
-SCALE_LYDIAN
-SCALE_MIXOLYDIAN
-SCALE_AEOLIAN
-SCALE_LOCRIAN
-SCALE_BLUES
-SCALE_PENTATONIC_MAJOR
-SCALE_PENTATONIC_MINOR
-SCALE_WHOLE_TONE
-SCALE_DIMINISHED
-// ... and more
+GingoFretboard guitar = GingoFretboard::violao();   // 6 strings, 19 frets
+// Also: ::cavaquinho(), ::bandolim(), ::ukulele()
+
+guitar.noteAt(0, 5);                  // GingoNote("A") — string 0, fret 5
+guitar.midiAt(0, 0);                  // 40 (E2)
+
+GingoFretPos positions[48];
+guitar.positions(GingoNote("E"), positions, 48);
+guitar.scalePositions(scale, positions, 48, 0, 4);
+
+GingoFingering fg;
+guitar.fingering(GingoChord("CM"), 0, fg); // best fingering at position 0
+
+GingoFingering fgs[5];
+guitar.fingerings(GingoChord("CM"), fgs, 5); // up to 5 fingerings
+
+GingoFretboard capo2 = guitar.capo(2);      // transposed fretboard
 ```
 
-### Configuration
-
-Override default settings **before** including the library:
-
+#### GingoEvent & GingoSequence (Tier 3)
 ```cpp
-// Limit memory usage
-#define GINGODUINO_MAX_CHORD_NOTES 5
-#define GINGODUINO_MAX_SCALE_NOTES 8
+GingoEvent ne = GingoEvent::noteEvent(GingoNote("C"), GingoDuration("quarter"), 4);
+GingoEvent ce = GingoEvent::chordEvent(GingoChord("CM"), GingoDuration("half"));
+GingoEvent re = GingoEvent::rest(GingoDuration("quarter"));
 
-// Force a specific tier (1, 2, or 3)
-#define GINGODUINO_TIER 1
+ne.type();          // EVENT_NOTE
+ne.midiNumber();    // 60
+ne.frequency();     // 261.6
+ne.transpose(7);    // GingoEvent (G4)
 
-#include <Gingoduino.h>
+GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
+seq.add(ne);
+seq.add(re);
+seq.totalBeats();   // 2.0
+seq.totalSeconds(); // 1.0 at 120 BPM
+seq.barCount();     // 0.5
+seq.transpose(5);   // transpose all events
 ```
 
-**Platform Auto-Detection:**
-- **AVR** (Arduino Uno, Nano): Tier 1
-- **ESP8266**: Tier 2
-- **ESP32, RP2040, Teensy, Daisy Seed**: Tier 3
+### Examples
 
-### Memory Usage
+| Example | Description | Tier |
+|---------|-------------|------|
+| BasicNote | Note creation, transposition, MIDI, frequency | 1 |
+| ChordNotes | Chord notes, intervals, identify | 1 |
+| ScaleExplorer | Scales, modes, pentatonic | 2 |
+| HarmonicField | Triads, sevenths, harmonic functions | 2 |
+| TDisplayS3Explorer | 7-page interactive GUI on LilyGo T-Display S3 | 3 |
 
-Approximate memory footprint (in bytes):
+#### T-Display S3 Explorer
 
-| Platform | Tier 1 | Tier 2 | Tier 3 |
-|----------|--------|--------|--------|
-| AVR      | ~2KB   | ~4KB   | N/A    |
-| ESP8266  | ~3KB   | ~6KB   | N/A    |
-| ESP32    | ~4KB   | ~8KB   | ~15KB  |
+Interactive demo on LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI).
 
-*Actual usage depends on configuration and included features.*
+**Setup:** Install TFT_eSPI, configure for T-Display S3 (`Setup206_LilyGo_T_Display_S3.h`).
 
-### Supported Platforms
-
-| Platform | Tested | Supported |
-|----------|--------|-----------|
-| Arduino Uno/Nano (AVR) | ✓ | ✓ |
-| Arduino Mega | ✓ | ✓ |
-| Arduino Leonardo | ✓ | ✓ |
-| ESP32 | ✓ | ✓ |
-| ESP8266 | ✓ | ✓ |
-| Raspberry Pi Pico | ✓ | ✓ |
-| Teensy 3.x / 4.x | ✓ | ✓ |
-| Daisy Seed | ✓ | ✓ |
-| Arduino MKR series | ✓ | ✓ |
-
-### T-Display S3 Explorer Example
-
-The included **TDisplayS3Explorer** example demonstrates a full interactive application on the LilyGo T-Display S3 (ESP32-S3 with 170×320 TFT display):
-
-**Hardware Required:**
-- LilyGo T-Display S3 board
-- USB-C cable for programming
-
-**Setup:**
-1. Install TFT_eSPI library via Arduino IDE
-2. Configure TFT_eSPI for T-Display S3:
-   - Edit `TFT_eSPI/User_Setup_Select.h`
-   - Comment out: `#include <User_Setup.h>`
-   - Uncomment: `#include <User_Setups/Setup206_LilyGo_T_Display_S3.h>`
-3. Upload TDisplayS3Explorer sketch
-
-**Navigation:**
-- **LEFT button (BOOT)**: Switch pages
-- **RIGHT button (KEY)**: Cycle items within page
+**Navigation:** BOOT = switch page, KEY = cycle items.
 
 **Pages:**
-1. **Note Explorer** — 12 chromatic notes with MIDI and frequency
-2. **Chord Explorer** — Common chords with interval analysis
-3. **Scale Explorer** — Scales, modes, and pentatonic variants
-4. **Harmonic Field** — Triads/sevenths with harmonic functions (T/S/D)
+1. **Note Explorer** — 12 chromatic notes with MIDI, frequency, chromatic bar
+2. **Interval Explorer** — Consonance colors, full names EN/PT, chromatic bar
+3. **Chord Explorer** — Notes, intervals with consonance coloring
+4. **Scale Explorer** — Signature, brightness bar, relative/parallel
+5. **Harmonic Field** — Triads with T/S/D functions, role labels, sevenths
+6. **Fretboard** — Guitar diagram with chord fingerings and scale overlays
+7. **Sequence** — Timeline visualization with beat grid and event blocks
 
-### Contributing
+### Native Testing
 
-Contributions are welcome! Please:
+```bash
+g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra \
+    -o extras/tests/test_native extras/tests/test_native.cpp \
+    && ./extras/tests/test_native
+```
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+177 tests, 0 failures. No Arduino framework needed.
 
 ### License
 
-MIT License — See [LICENSE](LICENSE) file for details
+MIT License — See [LICENSE](LICENSE)
 
 ### Author
 
 **Saulo Verissimo**
-sauloverissimo@gmail.com
-https://github.com/sauloverissimo
-
-### Acknowledgments
-
-- Original [gingo library](https://github.com/sauloverissimo/gingo) (C++17)
-- Arduino community and ecosystem
-- Inspired by music theory pedagogy and creative coding
+- https://github.com/sauloverissimo
+- sauloverissimo@gmail.com
 
 ---
 
-## Versão em Português
+## Portugues
 
-### Visão Geral
+### Visao Geral
 
-Gingoduino é uma biblioteca completa de teoria musical para sistemas embarcados e microcontroladores. Traz conceitos expressivos de teoria musical diretamente para Arduino, ESP32, Teensy, Daisy Seed, Raspberry Pi Pico e outras plataformas.
+Gingoduino e uma biblioteca de teoria musical para sistemas embarcados. Traz notas, intervalos, acordes, escalas, campos harmonicos, engine de instrumentos de cordas, eventos musicais e sequencias para Arduino, ESP32, Teensy, Daisy Seed, Raspberry Pi Pico e outras plataformas.
 
-Desenvolvida como port da [biblioteca gingo C++17](https://github.com/sauloverissimo/gingo), Gingoduino fornece acesso a:
+Port da [biblioteca gingo C++17](https://github.com/sauloverissimo/gingo). Arquitetura zero-heap, tabelas PROGMEM, compativel C++11.
 
-- **Notas** — Notas cromáticas com frequência, MIDI e transposição
-- **Intervalos** — Intervalos musicais com nomes e cálculos
-- **Acordes** — Tipos de acordes comuns e estendidos com extração de notas
-- **Escalas** — Escalas maiores, menores, modais e exóticas
-- **Campos Harmônicos** — Tríades, tétrades e funções harmônicas (Tônica/Subdominante/Dominante)
-- **Ritmo** — Fórmulas de compasso, durações e tempo
+### Modulos
 
-### Características
+| Tier | Modulos | Plataformas |
+|------|---------|-------------|
+| 1 | Note, Interval, Chord | AVR (Uno, Nano) |
+| 2 | + Scale, Field, Duration, Tempo, TimeSig, Fretboard | ESP8266 |
+| 3 | + Event, Sequence | ESP32, RP2040, Teensy, Daisy Seed |
 
-✨ **Suporte Rico em Teoria Musical**
-- Sistema cromático com 12 notas e enarmônicos
-- 20+ tipos de acordes (maior, menor, sétima, diminuto, aumentado, etc.)
-- 40+ tipos de escalas e modos (maior, menor, blues, tons inteiros, etc.)
-- Análise de campo harmônico com harmonia funcional
-- Cálculos de frequência em Hz e números MIDI
+Tiers auto-detectados por plataforma, ou force com `#define GINGODUINO_TIER N`.
 
-⚡ **Otimizado para Sistemas Embarcados**
-- Pegada mínima de memória com camadas de funcionalidade configuráveis
-- Arrays de tamanho fixo (sem alocação dinâmica)
-- Suporte a PROGMEM para eficiência de RAM no Arduino
-- Compila em AVR, ESP8266, ESP32, RP2040, Teensy e mais
+### Caracteristicas
 
-🎛️ **Arquitetura em Camadas**
-- **Camada 1**: Notas, Intervalos, Acordes (mínima)
-- **Camada 2**: + Escalas, Campos, Durações, Tempo, Fórmulas de Compasso
-- **Camada 3**: + Sequências, Eventos, Árvores, Progressões (completa)
-- Camadas auto-selecionadas por plataforma, ou override manual
+- Sistema cromatico de 12 notas com enarmonicos
+- 42 formulas de acordes com lookup reverso (identify)
+- 40+ tipos de escalas e modos com armadura, brilho, relativa/paralela
+- Analise de campo harmonico com funcoes T/S/D e roles
+- Engine de braco: violao, cavaquinho, bandolim, ukulele com scoring de digitacao
+- Eventos musicais (nota, acorde, pausa) e sequencias com tempo/compasso
+- Arrays de tamanho fixo, sem alocacao dinamica, suporte PROGMEM
+- 177 testes nativos passando
 
-🔌 **Integração com Hardware**
-- Funciona com displays (TFT_eSPI, Adafruit GFX, etc.)
-- Pronto para saída MIDI
-- Debug por Serial incluído nos exemplos
+### Instalacao
 
-### Início Rápido
+**Arduino IDE Library Manager:**
+- Sketch > Include Library > Manage Libraries > Buscar `Gingoduino` > Install
 
-#### Instalação
+**Manual:**
+- Baixe e copie para sua pasta de bibliotecas Arduino (`~/Arduino/libraries/`)
 
-1. **Via Arduino IDE Library Manager:**
-   - Abra Arduino IDE → Sketch → Include Library → Manage Libraries
-   - Procure por `Gingoduino`
-   - Clique em Install
-
-2. **Instalação Manual:**
-   - Faça download deste repositório
-   - Copie a pasta `gingoduino/` para sua pasta de bibliotecas Arduino:
-     - macOS: `~/Documents/Arduino/libraries/`
-     - Linux: `~/Arduino/libraries/`
-     - Windows: `Documents\Arduino\libraries\`
-
-3. **Para usuários de ESP32 (se necessário):**
-   - Certifique-se de que o pacote da placa está instalado
-   - Biblioteca auto-detecta plataforma e carrega camada apropriada
-
-#### Uso Básico
+### Uso Rapido
 
 ```cpp
 #include <Gingoduino.h>
@@ -388,249 +308,71 @@ using namespace gingoduino;
 void setup() {
     Serial.begin(9600);
 
-    // Criar uma nota
     GingoNote nota("C");
-
-    // Obter propriedades
     Serial.println(nota.name());           // "C"
-    Serial.println(nota.semitone());       // 0
-    Serial.println(nota.midiNumber(4));    // 60 (Dó médio)
-    Serial.println(nota.frequency(4), 2);  // 261,63 Hz
+    Serial.println(nota.midiNumber(4));    // 60
+    Serial.println(nota.frequency(4), 1);  // 261.6
 
-    // Transpor
-    GingoNote quinta = nota.transpose(7);  // C + 7 semitons = G
+    GingoNote quinta = nota.transpose(7);  // G
+
+    GingoChord acorde("Cm7");
+    GingoNote notas[7];
+    uint8_t n = acorde.notes(notas, 7);
+
+    GingoScale escala("C", SCALE_MAJOR);
+    Serial.println(escala.signature());    // 0
+
+    GingoField campo("C", SCALE_MAJOR);
+    GingoChord triades[7];
+    campo.chords(triades, 7);              // CM, Dm, Em, FM, GM, Am, Bdim
 }
 
 void loop() {}
 ```
 
-#### Exemplos Inclusos
+### Exemplos
 
-1. **BasicNote** — Criação de notas, transposição, MIDI, frequência
-2. **ChordNotes** — Extração de notas de acordes, análise de intervalos
-3. **ScaleExplorer** — Navegação em escalas e modos
-4. **HarmonicField** — Tríades, tétrades e funções harmônicas
-5. **TDisplayS3Explorer** — GUI interativa no LilyGo T-Display S3 (170×320 TFT)
+| Exemplo | Descricao | Tier |
+|---------|-----------|------|
+| BasicNote | Criacao de notas, transposicao, MIDI, frequencia | 1 |
+| ChordNotes | Notas de acordes, intervalos, identify | 1 |
+| ScaleExplorer | Escalas, modos, pentatonica | 2 |
+| HarmonicField | Triades, tetrades, funcoes harmonicas | 2 |
+| TDisplayS3Explorer | GUI interativa com 7 paginas no LilyGo T-Display S3 | 3 |
 
-Execute qualquer exemplo via Arduino IDE: File → Examples → Gingoduino → [Nome do Exemplo]
+#### T-Display S3 Explorer
 
-### Documentação da API
+Demo interativo no LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI).
 
-#### GingoNote
+**Setup:** Instale TFT_eSPI, configure para T-Display S3 (`Setup206_LilyGo_T_Display_S3.h`).
 
-```cpp
-GingoNote nota("C#");
+**Navegacao:** BOOT = trocar pagina, KEY = proximo item.
 
-// Propriedades
-nota.name();              // "C#"
-nota.natural();           // "C"
-nota.semitone();          // 1 (0-11)
-nota.isSharp();           // true
-nota.isFlat();            // false
-nota.isNatural();         // false
+**Paginas:**
+1. **Note Explorer** — 12 notas cromaticas com MIDI, frequencia, barra cromatica
+2. **Interval Explorer** — Cores de consonancia, nomes completos EN/PT, barra cromatica
+3. **Chord Explorer** — Notas, intervalos com cor de consonancia
+4. **Scale Explorer** — Armadura, barra de brilho, relativa/paralela
+5. **Harmonic Field** — Triades com funcoes T/S/D, role labels, tetrades
+6. **Fretboard** — Diagrama de violao com digitacoes de acordes e overlay de escalas
+7. **Sequence** — Timeline visual com grid de beats e blocos de eventos
 
-// Frequência & MIDI
-nota.frequency(oitava);   // Hz (float)
-nota.midiNumber(oitava);  // 0-127
-nota.isEnharmonic(outra); // Verifica se nota equivalente
+### Testes Nativos
 
-// Transposição
-nota.transpose(semitons); // Retorna novo GingoNote
-
-// Distância
-nota.distance(outra);     // Semitons entre notas
+```bash
+g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra \
+    -o extras/tests/test_native extras/tests/test_native.cpp \
+    && ./extras/tests/test_native
 ```
 
-#### GingoChord
+177 testes, 0 falhas. Sem framework Arduino.
 
-```cpp
-GingoChord acorde("Cm7");
+### Licenca
 
-// Propriedades
-acorde.name();             // "Cm7"
-acorde.root();             // GingoNote("C")
-acorde.type();             // "m7" ou nome completo
-acorde.quality();          // "minor seventh"
-
-// Extrair notas
-GingoNote notas[7];
-uint8_t contador = acorde.notes(notas, 7);  // Preenche array
-
-// Rótulos de intervalos
-LabelStr rotulos[7];
-uint8_t contador = acorde.intervalLabels(rotulos, 7);  // "R", "3m", "5", "7m"
-```
-
-#### GingoScale
-
-```cpp
-GingoScale escala("A", SCALE_NATURAL_MINOR);
-
-// Propriedades
-escala.modeName(buf, tam);  // "Natural Minor" (Aeolian)
-escala.quality();           // "minor"
-
-// Extrair notas
-GingoNote notas[12];
-uint8_t contador = escala.notes(notas, 12);
-
-// Variante pentatônica
-GingoScale penta = escala.pentatonic();
-uint8_t contPenta = penta.notes(notasPenta, 12);
-```
-
-#### GingoField
-
-```cpp
-GingoField campo("C", SCALE_MAJOR);
-
-// Obter tríades (I, II, III, IV, V, VI, VII)
-GingoChord triades[7];
-uint8_t contador = campo.chords(triades, 7);
-
-// Obter acordes com sétima
-GingoChord setimas[7];
-uint8_t contador = campo.sevenths(setimas, 7);
-
-// Obter função harmônica
-uint8_t funcao = campo.function(grau);  // FUNC_TONIC, FUNC_SUBDOMINANT, FUNC_DOMINANT
-```
-
-### Tipos de Acordes Suportados
-
-- **Tríades**: M, m, dim, aug
-- **Sétimas**: 7, M7, m7, m7(b5), dim7
-- **Estendidos**: 9, 11, 13 (suporte parcial)
-- **Alterações**: sus2, sus4, add9, etc.
-
-### Tipos de Escalas Suportadas
-
-```cpp
-SCALE_MAJOR
-SCALE_NATURAL_MINOR
-SCALE_HARMONIC_MINOR
-SCALE_MELODIC_MINOR
-SCALE_IONIAN
-SCALE_DORIAN
-SCALE_PHRYGIAN
-SCALE_LYDIAN
-SCALE_MIXOLYDIAN
-SCALE_AEOLIAN
-SCALE_LOCRIAN
-SCALE_BLUES
-SCALE_PENTATONIC_MAJOR
-SCALE_PENTATONIC_MINOR
-SCALE_WHOLE_TONE
-SCALE_DIMINISHED
-// ... e mais
-```
-
-### Configuração
-
-Sobrescreva configurações padrão **antes** de incluir a biblioteca:
-
-```cpp
-// Limitar uso de memória
-#define GINGODUINO_MAX_CHORD_NOTES 5
-#define GINGODUINO_MAX_SCALE_NOTES 8
-
-// Forçar uma camada específica (1, 2 ou 3)
-#define GINGODUINO_TIER 1
-
-#include <Gingoduino.h>
-```
-
-**Auto-Detecção de Plataforma:**
-- **AVR** (Arduino Uno, Nano): Camada 1
-- **ESP8266**: Camada 2
-- **ESP32, RP2040, Teensy, Daisy Seed**: Camada 3
-
-### Uso de Memória
-
-Pegada aproximada de memória (em bytes):
-
-| Plataforma | Camada 1 | Camada 2 | Camada 3 |
-|-----------|----------|----------|----------|
-| AVR       | ~2KB     | ~4KB     | N/A      |
-| ESP8266   | ~3KB     | ~6KB     | N/A      |
-| ESP32     | ~4KB     | ~8KB     | ~15KB    |
-
-*O uso real depende da configuração e recursos inclusos.*
-
-### Plataformas Suportadas
-
-| Plataforma | Testado | Suportado |
-|-----------|---------|-----------|
-| Arduino Uno/Nano (AVR) | ✓ | ✓ |
-| Arduino Mega | ✓ | ✓ |
-| Arduino Leonardo | ✓ | ✓ |
-| ESP32 | ✓ | ✓ |
-| ESP8266 | ✓ | ✓ |
-| Raspberry Pi Pico | ✓ | ✓ |
-| Teensy 3.x / 4.x | ✓ | ✓ |
-| Daisy Seed | ✓ | ✓ |
-| Arduino MKR series | ✓ | ✓ |
-
-### Exemplo T-Display S3 Explorer
-
-O exemplo incluído **TDisplayS3Explorer** demonstra uma aplicação interativa completa no LilyGo T-Display S3 (ESP32-S3 com display TFT 170×320):
-
-**Hardware Necessário:**
-- Placa LilyGo T-Display S3
-- Cabo USB-C para programação
-
-**Configuração:**
-1. Instale biblioteca TFT_eSPI via Arduino IDE
-2. Configure TFT_eSPI para T-Display S3:
-   - Edite `TFT_eSPI/User_Setup_Select.h`
-   - Comente: `#include <User_Setup.h>`
-   - Descomente: `#include <User_Setups/Setup206_LilyGo_T_Display_S3.h>`
-3. Faça upload do sketch TDisplayS3Explorer
-
-**Navegação:**
-- **Botão ESQUERDO (BOOT)**: Trocar páginas
-- **Botão DIREITO (KEY)**: Navegar itens dentro da página
-
-**Páginas:**
-1. **Note Explorer** — 12 notas cromáticas com MIDI e frequência
-2. **Chord Explorer** — Acordes comuns com análise de intervalos
-3. **Scale Explorer** — Escalas, modos e variantes pentatônicas
-4. **Harmonic Field** — Tríades/sétimas com funções harmônicas (T/S/D)
-
-### Contribuindo
-
-Contribuições são bem-vindas! Por favor:
-
-1. Faça fork do repositório
-2. Crie uma branch de feature (`git checkout -b feature/minha-feature`)
-3. Faça commit de suas mudanças (`git commit -m 'Adiciona minha feature'`)
-4. Faça push para a branch (`git push origin feature/minha-feature`)
-5. Abra um Pull Request
-
-### Licença
-
-Licença MIT — Veja arquivo [LICENSE](LICENSE) para detalhes
+MIT License — Veja [LICENSE](LICENSE)
 
 ### Autor
 
 **Saulo Verissimo**
-sauloverissimo@gmail.com
-https://github.com/sauloverissimo
-
-### Agradecimentos
-
-- Biblioteca original [gingo](https://github.com/sauloverissimo/gingo) (C++17)
-- Comunidade e ecossistema Arduino
-- Inspirado em pedagogia de teoria musical e programação criativa
-
----
-
-## Changelog
-
-### v0.1.0 (Initial Release)
-- Port from gingo C++17 library
-- Tier 1: Notes, Intervals, Chords
-- Tier 2: Scales, Fields, Rhythm
-- Tier 3: Sequences, Events, Progressions
-- TDisplayS3Explorer interactive example
-- Multiple Arduino platforms support
+- https://github.com/sauloverissimo
+- sauloverissimo@gmail.com

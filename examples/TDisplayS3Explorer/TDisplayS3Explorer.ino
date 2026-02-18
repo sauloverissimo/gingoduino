@@ -1,5 +1,7 @@
 // Gingoduino — T-Display-S3 Music Theory Explorer
 //
+// SPDX-License-Identifier: MIT
+//
 // Interactive demo for LilyGo T-Display-S3 (ESP32-S3 + ST7789 170x320).
 // Navigate with the 2 built-in buttons:
 //   LEFT  (GPIO 0 / BOOT): switch page
