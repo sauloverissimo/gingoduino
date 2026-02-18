@@ -1,0 +1,26 @@
+# Reference library (separate repo)
+gingo/
+
+# Build artifacts
+bin/
+extras/tests/test_native
+*.o
+*.elf
+*.bin
+*.hex
+
+# IDE / tool files
+.claude/
+CLAUDE.md
+MEMORY.md
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Arduino IDE build
+build/
