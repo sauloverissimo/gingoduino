@@ -35,17 +35,9 @@
 #include <TFT_eSPI.h>
 #include <Gingoduino.h>
 #include <driver/i2s.h>
+#include "mapping.h"
 
 using namespace gingoduino;
-
-// ---------------------------------------------------------------------------
-// I2S Audio Configuration (PCM5102 DAC via I2S)
-// ---------------------------------------------------------------------------
-#define I2S_BCK    GPIO_NUM_11  // bit clock   (via R15 → PCM5102 pin 13)
-#define I2S_LRCK   GPIO_NUM_13  // word select (via R13 → PCM5102 pin 15)
-#define I2S_DOUT   GPIO_NUM_12  // data out    (via R14 → PCM5102 pin 14)
-#define SAMPLE_RATE 44100
-#define I2S_BUFFER_SIZE 256     // frames per DMA buffer
 
 // ---------------------------------------------------------------------------
 // Audio Engine — polyphonic voices with individual ADSR envelopes
@@ -128,13 +120,6 @@ static void schedRemove(uint8_t s) {
 }
 
 // ---------------------------------------------------------------------------
-// Hardware
-// ---------------------------------------------------------------------------
-#define BTN_LEFT   0   // BOOT button — switch page
-#define BTN_RIGHT  14  // KEY  button — cycle items
-#define TFT_BL_PIN 38
-
-// ---------------------------------------------------------------------------
 // Display
 // ---------------------------------------------------------------------------
 TFT_eSPI tft = TFT_eSPI();
@@ -168,10 +153,6 @@ TFT_eSPI tft = TFT_eSPI();
 #define C_EVT_CHORD 0xFBE0  // orange
 #define C_EVT_REST  0x4208  // dark grey
 #define C_BEAT_LINE 0x6B4D  // grey
-
-// Screen dimensions (landscape)
-#define SCR_W 320
-#define SCR_H 170
 
 // ---------------------------------------------------------------------------
 // State
@@ -1044,7 +1025,7 @@ void drawSequencePage() {
     tft.print(sp.beatUnit);
 
     char classBuf[12];
-    timeSig.classification(classBuf, sizeof(classBuf));
+    g_seq.timeSignature().classification(classBuf, sizeof(classBuf));
     tft.print(" ");
     tft.print(classBuf);
 
@@ -1552,9 +1533,9 @@ void setup() {
     pinMode(TFT_BL_PIN, OUTPUT);
     digitalWrite(TFT_BL_PIN, HIGH);
 
-    // Battery power support (GPIO 15 enables power)
-    pinMode(15, OUTPUT);
-    digitalWrite(15, HIGH);
+    // Battery power support
+    pinMode(PWR_EN_PIN, OUTPUT);
+    digitalWrite(PWR_EN_PIN, HIGH);
 
     // Display init
     tft.init();

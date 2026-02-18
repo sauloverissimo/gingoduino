@@ -13,6 +13,8 @@ extras/tests/test_native
 .claude/
 CLAUDE.md
 MEMORY.md
+ROADMAP.md
+
 .vscode/
 *.swp
 *.swo
