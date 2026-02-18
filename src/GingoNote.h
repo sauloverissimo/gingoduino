@@ -67,6 +67,15 @@ public:
     bool operator==(const GingoNote& other) const { return natural_ == other.natural_; }
     bool operator!=(const GingoNote& other) const { return !(natural_ == other.natural_); }
 
+    // -- MIDI conversion --
+
+    /// Create a note from a MIDI number (C4 = 60).
+    /// Uses sharp-based notation (C#, D#, F#, G#, A#).
+    static GingoNote fromMIDI(uint8_t midiNote);
+
+    /// Extract octave from MIDI number (C4 = 60 → octave 4).
+    static int8_t octaveFromMIDI(uint8_t midiNote);
+
     // -- Static utilities --
 
     /// Resolve any enharmonic spelling to sharp-based canonical form.

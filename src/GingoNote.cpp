@@ -9,6 +9,21 @@
 namespace gingoduino {
 
 // ---------------------------------------------------------------------------
+// MIDI conversion
+// ---------------------------------------------------------------------------
+
+GingoNote GingoNote::fromMIDI(uint8_t midiNote) {
+    uint8_t semitone = midiNote % 12;
+    char noteName[3];
+    data::readChromaticName(semitone, noteName, sizeof(noteName));
+    return GingoNote(noteName);
+}
+
+int8_t GingoNote::octaveFromMIDI(uint8_t midiNote) {
+    return (int8_t)(midiNote / 12) - 1;
+}
+
+// ---------------------------------------------------------------------------
 // Static utilities
 // ---------------------------------------------------------------------------
 
