@@ -20,10 +20,10 @@
 //   7. Sequence            — timeline visualization with PLAY/STOP button
 //
 // Audio Hardware: PCM5102A I2S DAC (3.5mm stereo output)
-//   GPIO 17: I2S DIN (data)
-//   GPIO 18: I2S BCK (bit clock)
-//   GPIO 44: I2S LRCK (left-right clock)
-//   GPIO 43: I2S MCLK (master clock)
+//   GPIO 11: I2S BCK  (bit clock)   — via R15 470ohm → PCM5102 pin 13
+//   GPIO 12: I2S DIN  (data out)    — via R14 470ohm → PCM5102 pin 14
+//   GPIO 13: I2S LRCK (word select) — via R13 470ohm → PCM5102 pin 15
+//   MCLK: not used (PCM5102 SCK pin tied to GND = 3-wire mode)
 //
 // REQUIRES:
 //   - TFT_eSPI library configured for T-Display-S3
@@ -41,24 +41,88 @@ using namespace gingoduino;
 // ---------------------------------------------------------------------------
 // I2S Audio Configuration (PCM5102 DAC via I2S)
 // ---------------------------------------------------------------------------
-#define I2S_BCLK   GPIO_NUM_18
-#define I2S_LRCK   GPIO_NUM_44
-#define I2S_DIN    GPIO_NUM_17
-#define I2S_MCLK   GPIO_NUM_43
+#define I2S_BCK    GPIO_NUM_11  // bit clock   (via R15 → PCM5102 pin 13)
+#define I2S_LRCK   GPIO_NUM_13  // word select (via R13 → PCM5102 pin 15)
+#define I2S_DOUT   GPIO_NUM_12  // data out    (via R14 → PCM5102 pin 14)
 #define SAMPLE_RATE 44100
-#define I2S_BUFFER_SIZE 512
+#define I2S_BUFFER_SIZE 256     // frames per DMA buffer
 
-// Audio synthesis state
-struct AudioState {
-    volatile bool playing = false;
-    volatile float frequencies[4] = {0, 0, 0, 0};  // up to 4-voice polyphony
-    volatile uint8_t numVoices = 0;
-    volatile float envelope = 1.0f;
-    volatile float targetEnvelope = 1.0f;
-    uint32_t playStartMs = 0;
+// ---------------------------------------------------------------------------
+// Audio Engine — polyphonic voices with individual ADSR envelopes
+// ---------------------------------------------------------------------------
+#define MAX_VOICES    4
+#define MAX_SCHEDULED 32
+
+enum EnvStage : uint8_t { ENV_OFF, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE };
+
+struct Voice {
+    float freq;          // Hz (0 = inactive)
+    float phase;         // oscillator phase
+    float envLevel;      // current envelope level (0..1)
+    EnvStage envStage;   // ADSR stage
+    uint32_t durSamples; // auto note-off after N samples (0 = manual)
+    uint32_t elapsed;    // samples since note-on
 };
-static AudioState audioState;
+
+struct ADSRParams {
+    float attackRate;    // envelope increment per sample
+    float decayRate;     // envelope decrement per sample
+    float sustainLevel;  // sustain level (0..1)
+    float releaseRate;   // envelope decrement per sample
+};
+
+struct ScheduledEvent {
+    float freq;              // frequency for this voice
+    uint8_t voiceSlot;       // which voice slot to use (0..3)
+    uint32_t triggerAt;      // sample clock when to start
+    uint32_t durSamples;     // duration in samples
+};
+
+struct AudioEngine {
+    Voice voices[MAX_VOICES];
+    ADSRParams adsr;
+
+    // Non-blocking scheduler (accessed from both cores — use schedCount as gate)
+    ScheduledEvent schedule[MAX_SCHEDULED];
+    volatile uint8_t schedCount;
+    uint32_t sampleClock;
+
+    // Control
+    volatile bool clearAll;   // signal to stop everything
+};
+
+static AudioEngine engine;
 static TaskHandle_t audioTaskHandle = NULL;
+
+// ADSR presets (converted to per-sample rates in initADSR)
+static void setADSR(float attackMs, float decayMs, float sustainLvl, float releaseMs) {
+    engine.adsr.attackRate  = 1.0f / (attackMs  * SAMPLE_RATE / 1000.0f);
+    engine.adsr.decayRate   = (1.0f - sustainLvl) / (decayMs * SAMPLE_RATE / 1000.0f);
+    engine.adsr.sustainLevel = sustainLvl;
+    engine.adsr.releaseRate = sustainLvl / (releaseMs * SAMPLE_RATE / 1000.0f);
+}
+
+static uint32_t msToSamples(uint32_t ms) {
+    return (uint32_t)((uint64_t)ms * SAMPLE_RATE / 1000);
+}
+
+/// Add an event to the schedule (thread-safe: writes data first, then bumps count).
+static bool schedAdd(const ScheduledEvent& ev) {
+    uint8_t idx = engine.schedCount;
+    if (idx >= MAX_SCHEDULED) return false;
+    engine.schedule[idx] = ev;
+    engine.schedCount = idx + 1;
+    return true;
+}
+
+/// Remove event at index s by swapping with last (called only from audioTask).
+static void schedRemove(uint8_t s) {
+    uint8_t last = engine.schedCount - 1;
+    if (s != last) {
+        engine.schedule[s] = engine.schedule[last];
+    }
+    engine.schedCount = last;
+}
 
 // ---------------------------------------------------------------------------
 // Hardware
@@ -1082,13 +1146,80 @@ void drawSequencePage() {
 }
 
 // ---------------------------------------------------------------------------
-// Audio Synthesis Task
+// Audio Engine — polyphonic synthesizer with per-voice ADSR
 // ---------------------------------------------------------------------------
 
-/// FreeRTOS task that generates audio samples continuously.
-/// Runs on core 1 to avoid blocking the display on core 0.
+/// Process ADSR envelope for one voice, returns current level.
+static inline float processADSR(Voice& v, const ADSRParams& adsr) {
+    switch (v.envStage) {
+        case ENV_ATTACK:
+            v.envLevel += adsr.attackRate;
+            if (v.envLevel >= 1.0f) {
+                v.envLevel = 1.0f;
+                v.envStage = ENV_DECAY;
+            }
+            break;
+        case ENV_DECAY:
+            v.envLevel -= adsr.decayRate;
+            if (v.envLevel <= adsr.sustainLevel) {
+                v.envLevel = adsr.sustainLevel;
+                v.envStage = ENV_SUSTAIN;
+            }
+            break;
+        case ENV_SUSTAIN:
+            v.envLevel = adsr.sustainLevel;
+            break;
+        case ENV_RELEASE:
+            v.envLevel -= adsr.releaseRate;
+            if (v.envLevel <= 0.0f) {
+                v.envLevel = 0.0f;
+                v.envStage = ENV_OFF;
+                v.freq = 0.0f;
+            }
+            break;
+        case ENV_OFF:
+        default:
+            v.envLevel = 0.0f;
+            break;
+    }
+    return v.envLevel;
+}
+
+/// Start a voice with given frequency.
+static void voiceNoteOn(uint8_t slot, float freq, uint32_t durSamples = 0) {
+    if (slot >= MAX_VOICES) return;
+    Voice& v = engine.voices[slot];
+    v.freq = freq;
+    v.phase = 0.0f;
+    v.envLevel = 0.0f;
+    v.envStage = ENV_ATTACK;
+    v.durSamples = durSamples;
+    v.elapsed = 0;
+}
+
+/// Trigger release on a voice.
+static void voiceNoteOff(uint8_t slot) {
+    if (slot >= MAX_VOICES) return;
+    Voice& v = engine.voices[slot];
+    if (v.envStage != ENV_OFF) {
+        v.envStage = ENV_RELEASE;
+    }
+}
+
+/// Release all voices.
+static void releaseAllVoices() {
+    for (uint8_t i = 0; i < MAX_VOICES; i++) {
+        voiceNoteOff(i);
+    }
+}
+
+/// Kill all voices and clear schedule immediately.
+static void killAllAudio() {
+    engine.clearAll = true;
+}
+
+/// FreeRTOS task: audio synthesis on core 1.
 void audioTask(void* pvParameters) {
-    // I2S configuration
     i2s_config_t i2s_config = {
         .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
         .sample_rate = SAMPLE_RATE,
@@ -1104,191 +1235,282 @@ void audioTask(void* pvParameters) {
     };
 
     i2s_pin_config_t pin_config = {
-        .mck_io_num = I2S_MCLK,
-        .bck_io_num = I2S_BCLK,
+        .mck_io_num = I2S_PIN_NO_CHANGE,
+        .bck_io_num = I2S_BCK,
         .ws_io_num = I2S_LRCK,
-        .data_out_num = I2S_DIN,
+        .data_out_num = I2S_DOUT,
         .data_in_num = I2S_PIN_NO_CHANGE,
     };
 
-    i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
+    esp_err_t err = i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
+    Serial.printf("I2S init: %s (BCK=%d WS=%d DOUT=%d)\n",
+                  err == ESP_OK ? "OK" : "FAIL", I2S_BCK, I2S_LRCK, I2S_DOUT);
     i2s_set_pin(I2S_NUM_0, &pin_config);
+    i2s_zero_dma_buffer(I2S_NUM_0);
 
-    int16_t* buffer = (int16_t*)malloc(I2S_BUFFER_SIZE * sizeof(int16_t));
-    float phase[4] = {0, 0, 0, 0};
+    const int FRAMES = I2S_BUFFER_SIZE;
+    int16_t* buffer = (int16_t*)malloc(FRAMES * 2 * sizeof(int16_t));
 
     while (true) {
-        // Generate samples
-        for (int i = 0; i < I2S_BUFFER_SIZE; i++) {
-            float sample = 0.0f;
-
-            if (audioState.playing && audioState.numVoices > 0) {
-                // Mix multiple voices
-                for (uint8_t v = 0; v < audioState.numVoices; v++) {
-                    if (audioState.frequencies[v] > 0) {
-                        // Sine wave oscillator
-                        float freq = audioState.frequencies[v];
-                        phase[v] += (2.0f * M_PI * freq) / SAMPLE_RATE;
-                        if (phase[v] > 2.0f * M_PI) phase[v] -= 2.0f * M_PI;
-
-                        sample += sin(phase[v]) / audioState.numVoices;
-                    }
-                }
-
-                // Apply envelope
-                sample *= audioState.envelope;
-
-                // Smooth envelope transitions
-                if (audioState.envelope < audioState.targetEnvelope) {
-                    audioState.envelope += 0.001f;  // attack
-                } else if (audioState.envelope > audioState.targetEnvelope) {
-                    audioState.envelope -= 0.005f;  // release (faster)
-                }
-                if (audioState.envelope < 0.0f) audioState.envelope = 0.0f;
-                if (audioState.envelope > 1.0f) audioState.envelope = 1.0f;
-            } else {
-                sample = 0.0f;
-                audioState.envelope = 0.0f;
+        // Handle clearAll signal
+        if (engine.clearAll) {
+            for (uint8_t v = 0; v < MAX_VOICES; v++) {
+                engine.voices[v].envStage = ENV_OFF;
+                engine.voices[v].envLevel = 0.0f;
+                engine.voices[v].freq = 0.0f;
             }
-
-            // Convert to 16-bit stereo
-            int16_t sample16 = (int16_t)(sample * 32767.0f * 0.7f);  // 0.7 for headroom
-            buffer[i] = sample16;
+            engine.schedCount = 0;
+            engine.clearAll = false;
         }
 
-        // Send to I2S
-        size_t bytes_written = 0;
-        i2s_write(I2S_NUM_0, buffer, I2S_BUFFER_SIZE * sizeof(int16_t), &bytes_written, portMAX_DELAY);
+        // Process scheduled events
+        for (uint8_t s = 0; s < engine.schedCount; ) {
+            ScheduledEvent& ev = engine.schedule[s];
+            if (engine.sampleClock >= ev.triggerAt) {
+                voiceNoteOn(ev.voiceSlot, ev.freq, ev.durSamples);
+                schedRemove(s);
+            } else {
+                s++;
+            }
+        }
 
-        vTaskDelay(1);
+        // Generate audio samples
+        for (int i = 0; i < FRAMES; i++) {
+            float mixed = 0.0f;
+
+            for (uint8_t v = 0; v < MAX_VOICES; v++) {
+                Voice& voice = engine.voices[v];
+                if (voice.envStage == ENV_OFF) continue;
+
+                // Oscillator (sine wave)
+                voice.phase += (2.0f * M_PI * voice.freq) / SAMPLE_RATE;
+                if (voice.phase > 2.0f * M_PI) voice.phase -= 2.0f * M_PI;
+                float osc = sinf(voice.phase);
+
+                // ADSR envelope
+                float env = processADSR(voice, engine.adsr);
+                mixed += osc * env;
+
+                // Auto note-off (timed duration)
+                voice.elapsed++;
+                if (voice.durSamples > 0 && voice.elapsed >= voice.durSamples) {
+                    if (voice.envStage != ENV_RELEASE && voice.envStage != ENV_OFF) {
+                        voice.envStage = ENV_RELEASE;
+                    }
+                }
+            }
+
+            // Soft-clip to avoid harsh distortion on chords
+            float limited = tanhf(mixed * 0.7f);
+            int16_t sample16 = (int16_t)(limited * 30000.0f);
+            buffer[i * 2]     = sample16;
+            buffer[i * 2 + 1] = sample16;
+
+            engine.sampleClock++;
+        }
+
+        size_t bytes_written = 0;
+        i2s_write(I2S_NUM_0, buffer, FRAMES * 2 * sizeof(int16_t),
+                  &bytes_written, portMAX_DELAY);
     }
 
     free(buffer);
     vTaskDelete(NULL);
 }
 
-/// Stop audio playback smoothly (envelope release).
+// ---------------------------------------------------------------------------
+// Audio API — all non-blocking, returns immediately
+// ---------------------------------------------------------------------------
+
+/// Stop all audio smoothly (release all voices, clear schedule).
 void stopAudio() {
-    audioState.targetEnvelope = 0.0f;
-    audioState.playStartMs = millis();
+    engine.schedCount = 0;
+    releaseAllVoices();
 }
 
-/// Play a single note.
-void playNote(const GingoNote& note, uint8_t octave = 4, uint32_t durationMs = 500) {
-    audioState.frequencies[0] = note.frequency(octave);
-    audioState.numVoices = 1;
-    audioState.playing = true;
-    audioState.targetEnvelope = 1.0f;
+/// Play a single note (sustains until stopAudio or new note).
+void playNote(const GingoNote& note, uint8_t octave = 4, uint32_t durationMs = 0) {
+    releaseAllVoices();
+    uint32_t dur = durationMs > 0 ? msToSamples(durationMs) : 0;
+    voiceNoteOn(0, note.frequency(octave), dur);
 }
 
-/// Play a chord (up to 4 notes).
-void playChord(const GingoChord& chord, uint8_t octave = 4, uint32_t durationMs = 500) {
+/// Play a chord with strum effect (small delay between voices).
+void playChord(const GingoChord& chord, uint8_t octave = 4,
+               uint32_t durationMs = 0, uint32_t strumMs = 20) {
+    releaseAllVoices();
     GingoNote notes[7];
     uint8_t count = chord.notes(notes, 7);
-    if (count > 4) count = 4;  // limit to 4 voices
+    if (count > MAX_VOICES) count = MAX_VOICES;
 
-    for (uint8_t i = 0; i < count; i++) {
-        audioState.frequencies[i] = notes[i].frequency(octave);
+    uint32_t dur = durationMs > 0 ? msToSamples(durationMs) : 0;
+    uint32_t strumSamples = msToSamples(strumMs);
+
+    // First voice plays immediately
+    voiceNoteOn(0, notes[0].frequency(octave), dur);
+
+    // Remaining voices scheduled with strum delay on separate slots
+    for (uint8_t i = 1; i < count; i++) {
+        if (engine.schedCount < MAX_SCHEDULED) {
+            ScheduledEvent ev = {};
+            ev.freq = notes[i].frequency(octave);
+            ev.voiceSlot = i;
+            ev.triggerAt = engine.sampleClock + strumSamples * i;
+            ev.durSamples = dur;
+            schedAdd(ev);
+        }
     }
-    audioState.numVoices = count;
-    audioState.playing = true;
-    audioState.targetEnvelope = 1.0f;
 }
 
-/// Play a scale as an arpeggio (sequential notes).
-void playScaleArpeggio(const GingoScale& scale, uint8_t octave = 4) {
-    GingoNote notes[12];
-    uint8_t count = scale.notes(notes, 12);
+/// Schedule an arpeggio (non-blocking: notes play over time).
+void scheduleArpeggio(const GingoNote* notes, uint8_t count,
+                      uint8_t octave, uint32_t noteMs, uint32_t gapMs) {
+    killAllAudio();
+    delay(5); // let clearAll propagate
 
-    // Play each note sequentially
-    for (uint8_t i = 0; i < count; i++) {
-        audioState.frequencies[0] = notes[i].frequency(octave);
-        audioState.numVoices = 1;
-        audioState.playing = true;
-        audioState.targetEnvelope = 1.0f;
-        delay(200);  // 200ms per note
+    uint32_t noteSamples = msToSamples(noteMs);
+    uint32_t stepSamples = msToSamples(noteMs + gapMs);
+
+    for (uint8_t i = 0; i < count && engine.schedCount < MAX_SCHEDULED; i++) {
+        ScheduledEvent ev = {};
+        ev.freq = notes[i].frequency(octave);
+        ev.voiceSlot = 0;  // arpeggio: always slot 0 (one at a time)
+        ev.triggerAt = engine.sampleClock + stepSamples * i;
+        ev.durSamples = noteSamples;
+        schedAdd(ev);
     }
-    stopAudio();
 }
 
-/// Play sequence of events.
-void playSequence(const GingoSequence& seq) {
+/// Schedule a chord progression (non-blocking).
+void scheduleProgression(const GingoChord* chords, uint8_t count,
+                         uint8_t octave, uint32_t chordMs, uint32_t strumMs) {
+    killAllAudio();
+    delay(5);
+
+    uint32_t chordSamples = msToSamples(chordMs);
+    uint32_t strumSamples = msToSamples(strumMs);
+
+    for (uint8_t c = 0; c < count; c++) {
+        GingoNote notes[7];
+        uint8_t ncount = chords[c].notes(notes, 7);
+        if (ncount > MAX_VOICES) ncount = MAX_VOICES;
+
+        uint32_t baseTime = engine.sampleClock + chordSamples * c;
+
+        for (uint8_t v = 0; v < ncount && engine.schedCount < MAX_SCHEDULED; v++) {
+            ScheduledEvent ev = {};
+            ev.freq = notes[v].frequency(octave);
+            ev.voiceSlot = v;
+            ev.triggerAt = baseTime + strumSamples * v;
+            ev.durSamples = chordSamples - strumSamples * v;
+            schedAdd(ev);
+        }
+    }
+}
+
+/// Schedule a sequence playback (non-blocking).
+void scheduleSequence(const GingoSequence& seq) {
+    killAllAudio();
+    delay(5);
+
     const GingoTempo& tempo = seq.tempo();
+    uint32_t offset = 0;
 
     for (uint8_t i = 0; i < seq.size(); i++) {
         const GingoEvent& evt = seq.at(i);
-
-        // Calculate duration in milliseconds
         float beats = evt.duration().beats();
-        uint32_t durationMs = (uint32_t)(tempo.msPerBeat() * beats);
+        uint32_t durMs = (uint32_t)(tempo.msPerBeat() * beats);
+        uint32_t durSamples = msToSamples(durMs);
 
-        // Play the event
         if (evt.type() == EVENT_NOTE) {
-            playNote(evt.note(), evt.octave());
+            if (engine.schedCount < MAX_SCHEDULED) {
+                ScheduledEvent ev = {};
+                ev.freq = evt.note().frequency(evt.octave());
+                ev.voiceSlot = 0;
+                ev.triggerAt = engine.sampleClock + offset;
+                ev.durSamples = durSamples;
+                schedAdd(ev);
+            }
         } else if (evt.type() == EVENT_CHORD) {
-            playChord(evt.chord(), evt.octave());
-        } else {
-            stopAudio();
-        }
+            GingoNote notes[7];
+            uint8_t ncount = evt.chord().notes(notes, 7);
+            if (ncount > MAX_VOICES) ncount = MAX_VOICES;
 
-        delay(durationMs);
+            uint32_t strumSamples = msToSamples(15);
+            for (uint8_t v = 0; v < ncount && engine.schedCount < MAX_SCHEDULED; v++) {
+                ScheduledEvent ev = {};
+                ev.freq = notes[v].frequency(evt.octave());
+                ev.voiceSlot = v;
+                ev.triggerAt = engine.sampleClock + offset + strumSamples * v;
+                ev.durSamples = durSamples - strumSamples * v;
+                schedAdd(ev);
+            }
+        }
+        // Rests: just advance offset, no event scheduled
+
+        offset += durSamples;
     }
 
-    stopAudio();
+    seqPlaying = true;
 }
 
-/// Trigger audio for the current page/item.
+/// Trigger audio for the current page/item (ALL non-blocking).
 void triggerAudioForCurrentPage() {
     if (!audioEnabled) return;
 
     switch (currentPage) {
         case PAGE_NOTE: {
+            setADSR(5, 50, 0.7, 100);
             GingoNote note(NOTE_NAMES[itemIdx % 12]);
-            playNote(note, 4, 300);
+            playNote(note, 4);
             break;
         }
         case PAGE_INTERVAL: {
-            // Play interval as two notes
+            setADSR(5, 50, 0.7, 100);
+            stopAudio();
             GingoNote c("C");
             GingoNote other(c.transpose(itemIdx % 12));
-            audioState.frequencies[0] = c.frequency(4);
-            audioState.frequencies[1] = other.frequency(4);
-            audioState.numVoices = 2;
-            audioState.playing = true;
-            audioState.targetEnvelope = 1.0f;
+            // Strum: root immediately, interval note after 30ms
+            voiceNoteOn(0, c.frequency(4), 0);
+            if (engine.schedCount < MAX_SCHEDULED) {
+                ScheduledEvent ev = {};
+                ev.freq = other.frequency(4);
+                ev.voiceSlot = 1;
+                ev.triggerAt = engine.sampleClock + msToSamples(30);
+                ev.durSamples = 0;
+                schedAdd(ev);
+            }
             break;
         }
         case PAGE_CHORD: {
+            setADSR(10, 100, 0.6, 200);
             uint8_t idx = itemIdx % CHORD_LIST_SIZE;
             GingoChord chord(CHORD_LIST[idx]);
-            playChord(chord, 4, 500);
+            playChord(chord, 4, 0, 20);
             break;
         }
         case PAGE_SCALE: {
+            setADSR(3, 30, 0.5, 50);
             uint8_t idx = itemIdx % SCALE_LIST_SIZE;
             const ScaleEntry& se = SCALE_LIST[idx];
             GingoScale scale(se.tonic, se.type);
-            playScaleArpeggio(scale, 4);
+            GingoNote notes[12];
+            uint8_t count = scale.notes(notes, 12);
+            scheduleArpeggio(notes, count, 4, 280, 20);
             break;
         }
         case PAGE_FIELD: {
+            setADSR(10, 100, 0.6, 200);
             uint8_t idx = itemIdx % FIELD_LIST_SIZE;
             const FieldEntry& fe = FIELD_LIST[idx];
             GingoField field(fe.tonic, fe.type);
-
-            // Play the 7 chords as a progression
             GingoChord chords[7];
             uint8_t count = field.chords(chords, 7);
-
-            for (uint8_t i = 0; i < count; i++) {
-                playChord(chords[i], 4);
-                delay(400);
-            }
-            stopAudio();
+            scheduleProgression(chords, count, 4, 600, 15);
             break;
         }
         case PAGE_SEQUENCE:
-            // Sequence play handled separately via RIGHT button
+            // Handled separately via RIGHT button
             break;
         default:
             break;
@@ -1320,25 +1542,30 @@ void setup() {
     Serial.begin(115200);
     Serial.println("Gingoduino T-Display-S3 Explorer + Audio Synthesis");
 
+    // Initialize ADSR defaults
+    setADSR(5, 50, 0.7, 100);
+    memset((void*)&engine, 0, sizeof(engine));
+
     // Start audio synthesis task on core 1
     xTaskCreatePinnedToCore(
         audioTask,           // function
         "AudioTask",         // name
-        4096,                // stack size (bytes)
+        8192,                // stack size (bytes) — larger for float math
         NULL,                // parameters
-        1,                   // priority
+        2,                   // priority (higher than loop)
         &audioTaskHandle,    // task handle
-        1                    // core (1 = core 1, to avoid blocking display on core 0)
+        1                    // core 1
     );
 }
 
 void loop() {
     unsigned long now = millis();
+    bool itemChanged = false;
 
     // LEFT button — switch page, stop any playing audio
     if (digitalRead(BTN_LEFT) == LOW && (now - lastBtnLeft) > DEBOUNCE_MS) {
         lastBtnLeft = now;
-        stopAudio();
+        killAllAudio();
         seqPlaying = false;
         currentPage = (Page)(((uint8_t)currentPage + 1) % PAGE_COUNT);
         itemIdx = 0;
@@ -1352,45 +1579,48 @@ void loop() {
         lastBtnRight = now;
 
         if (currentPage == PAGE_SEQUENCE) {
-            // In sequence page: PLAY/STOP
             if (seqPlaying) {
-                stopAudio();
+                killAllAudio();
                 seqPlaying = false;
-                needRedraw = true;
             } else {
-                seqPlaying = true;
-                needRedraw = true;
-                // Trigger sequence playback in a non-blocking way would be better,
-                // but for now we'll play it synchronously
                 uint8_t idx = itemIdx % SEQ_PRESETS_SIZE;
                 const SeqPreset& sp = SEQ_PRESETS[idx];
-
                 GingoTempo tempo(sp.bpm);
                 GingoTimeSig timeSig(sp.beatsPerBar, sp.beatUnit);
                 GingoSequence seq(tempo, timeSig);
                 buildPresetSequence(idx, seq);
-
-                playSequence(seq);
-                seqPlaying = false;
-                needRedraw = true;
+                setADSR(5, 50, 0.7, 100);
+                scheduleSequence(seq);
             }
+            needRedraw = true;
         } else {
-            // Other pages: cycle items and trigger audio
             itemIdx++;
             needRedraw = true;
         }
     }
 
-    // Trigger audio when item changes on non-sequence pages
+    // Detect item change for audio trigger
     if (needRedraw && currentPage != PAGE_SEQUENCE) {
         if (itemIdx != lastItemIdx || currentPage != lastPage) {
             lastItemIdx = itemIdx;
             lastPage = currentPage;
-            triggerAudioForCurrentPage();
+            itemChanged = true;
         }
     }
 
-    // Redraw
+    // Auto-detect sequence end
+    if (seqPlaying && engine.schedCount == 0) {
+        bool anyActive = false;
+        for (uint8_t v = 0; v < MAX_VOICES; v++) {
+            if (engine.voices[v].envStage != ENV_OFF) { anyActive = true; break; }
+        }
+        if (!anyActive) {
+            seqPlaying = false;
+            needRedraw = true;
+        }
+    }
+
+    // REDRAW FIRST (fast, ~20ms) — then trigger audio
     if (needRedraw) {
         needRedraw = false;
         switch (currentPage) {
@@ -1402,6 +1632,11 @@ void loop() {
             case PAGE_FRETBOARD: drawFretboardPage();  break;
             case PAGE_SEQUENCE:  drawSequencePage();    break;
             default: break;
+        }
+
+        // Trigger audio AFTER display update
+        if (itemChanged) {
+            triggerAudioForCurrentPage();
         }
     }
 
