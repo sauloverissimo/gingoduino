@@ -18,6 +18,9 @@ MEMORY.md
 *.swo
 *~
 
+# Brainstorming / Philosophy (local notes, not versioned)
+filosofando.md
+
 # OS files
 .DS_Store
 Thumbs.db

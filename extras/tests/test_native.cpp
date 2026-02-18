@@ -651,9 +651,9 @@ void testMIDI() {
     CHECK(e60.midiNumber() == 60, "fromMIDI event midi=60");
     CHECK(e60.octave() == 4, "fromMIDI event octave=4");
 
-    // GingoEvent::toMIDI
+    // GingoEvent::toMIDI (uses internal velocity and channel)
     uint8_t midiBuffer[6];
-    uint8_t written = e60.toMIDI(midiBuffer, 1, 100);
+    uint8_t written = e60.toMIDI(midiBuffer);
     CHECK(written == 6, "noteEvent toMIDI writes 6 bytes");
     CHECK(midiBuffer[0] == 0x90, "NoteOn status=0x90");
     CHECK(midiBuffer[1] == 60, "NoteOn note=60");
@@ -664,8 +664,26 @@ void testMIDI() {
 
     // Rest event toMIDI (should return 0)
     GingoEvent rest = GingoEvent::rest(GingoDuration("quarter"));
-    uint8_t restWritten = rest.toMIDI(midiBuffer, 1, 100);
+    uint8_t restWritten = rest.toMIDI(midiBuffer);
     CHECK(restWritten == 0, "rest toMIDI writes 0 bytes");
+
+    // Test velocity and channel customization
+    GingoEvent eVel = GingoEvent::noteEvent(GingoNote("C"), GingoDuration("quarter"), 4, 64, 2);
+    CHECK(eVel.velocity() == 64, "custom velocity=64");
+    CHECK(eVel.midiChannel() == 2, "custom channel=2");
+    eVel.toMIDI(midiBuffer);
+    CHECK(midiBuffer[0] == 0x91, "channel 2 = 0x90 | 1 = 0x91");
+    CHECK(midiBuffer[2] == 64, "velocity=64");
+
+    // Test setVelocity/setMidiChannel
+    GingoEvent eMod = GingoEvent::noteEvent(GingoNote("E"), GingoDuration("eighth"), 4);
+    eMod.setVelocity(127);
+    eMod.setMidiChannel(16);
+    CHECK(eMod.velocity() == 127, "setVelocity(127)");
+    CHECK(eMod.midiChannel() == 16, "setMidiChannel(16)");
+    eMod.toMIDI(midiBuffer);
+    CHECK(midiBuffer[0] == 0x9F, "channel 16 = 0x90 | 15 = 0x9F");
+    CHECK(midiBuffer[2] == 127, "velocity=127");
 
     // GingoSequence::toMIDI
     GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
