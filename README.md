@@ -239,6 +239,63 @@ Interactive demo on LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI).
 6. **Fretboard** — Guitar diagram with chord fingerings and scale overlays
 7. **Sequence** — Timeline visualization with beat grid and event blocks
 
+### MIDI Support (v0.2.0+)
+
+Gingoduino includes bidirectional MIDI conversion and serialization for integration with synthesizers, sequencers, and audio analyzers.
+
+#### GingoNote — MIDI Conversion
+
+```cpp
+// Convert MIDI → Note
+GingoNote note = GingoNote::fromMIDI(60);         // "C"
+int8_t octave = GingoNote::octaveFromMIDI(60);    // 4
+
+// Convert Note → MIDI
+uint8_t midi = note.midiNumber(4);                // 60
+```
+
+#### GingoEvent — MIDI Serialization (v0.2.1+)
+
+```cpp
+// Create event with velocity and channel
+GingoEvent e = GingoEvent::noteEvent(
+    GingoNote("C"),
+    GingoDuration("quarter"),
+    4,      // octave
+    100,    // velocity (0-127)
+    1       // MIDI channel (1-16)
+);
+
+// Access and modify
+e.velocity();           // 100
+e.setVelocity(64);
+e.midiChannel();        // 1
+e.setMidiChannel(2);
+
+// Serialize to raw MIDI bytes
+uint8_t buf[6];
+uint8_t written = e.toMIDI(buf);  // NoteOn + NoteOff
+```
+
+#### GingoSequence — MIDI Export
+
+```cpp
+GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
+seq.add(GingoEvent::noteEvent(GingoNote("C"), GingoDuration("quarter"), 4));
+seq.add(GingoEvent::noteEvent(GingoNote("E"), GingoDuration("quarter"), 4));
+
+uint8_t buf[256];
+uint16_t len = seq.toMIDI(buf, sizeof(buf), 1);  // Export to MIDI bytes
+```
+
+#### MIDI Examples
+
+| Example | Description | Tier |
+|---------|-----------|------|
+| MIDI_to_Gingoduino | Receive MIDI USB/BLE, analyze with Gingoduino | 3 |
+| RealtimeChordIdentifier | Identify chords from simultaneous notes | 3 |
+| Gingoduino_to_MIDI | Create sequence, export as MIDI serial | 3 |
+
 ### Native Testing
 
 ```bash
@@ -247,7 +304,7 @@ g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra \
     && ./extras/tests/test_native
 ```
 
-177 tests, 0 failures. No Arduino framework needed.
+208 tests, 0 failures. No Arduino framework needed.
 
 ### License
 
@@ -288,7 +345,7 @@ Tiers auto-detectados por plataforma, ou force com `#define GINGODUINO_TIER N`.
 - Engine de braco: violao, cavaquinho, bandolim, ukulele com scoring de digitacao
 - Eventos musicais (nota, acorde, pausa) e sequencias com tempo/compasso
 - Arrays de tamanho fixo, sem alocacao dinamica, suporte PROGMEM
-- 177 testes nativos passando
+- 208 testes nativos passando
 
 ### Instalacao
 
@@ -357,7 +414,64 @@ Demo interativo no LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI).
 6. **Fretboard** — Diagrama de violao com digitacoes de acordes e overlay de escalas
 7. **Sequence** — Timeline visual com grid de beats e blocos de eventos
 
-### Testes Nativos
+### MIDI Support (v0.2.0+)
+
+Gingoduino inclui conversão MIDI bidirecional e serialização para integração com sintetizadores, sequenciadores e analisadores de áudio.
+
+#### GingoNote — MIDI Conversion
+
+```cpp
+// Converter MIDI → Nota
+GingoNote note = GingoNote::fromMIDI(60);         // "C"
+int8_t octave = GingoNote::octaveFromMIDI(60);    // 4
+
+// Converter Nota → MIDI
+uint8_t midi = note.midiNumber(4);                // 60
+```
+
+#### GingoEvent — MIDI Serialization (v0.2.1+)
+
+```cpp
+// Criar evento com velocity e channel
+GingoEvent e = GingoEvent::noteEvent(
+    GingoNote("C"),
+    GingoDuration("quarter"),
+    4,      // octave
+    100,    // velocity (0-127)
+    1       // MIDI channel (1-16)
+);
+
+// Acessar e modificar
+e.velocity();           // 100
+e.setVelocity(64);
+e.midiChannel();        // 1
+e.setMidiChannel(2);
+
+// Serializar para bytes MIDI raw
+uint8_t buf[6];
+uint8_t written = e.toMIDI(buf);  // NoteOn + NoteOff
+```
+
+#### GingoSequence — MIDI Export
+
+```cpp
+GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
+seq.add(GingoEvent::noteEvent(GingoNote("C"), GingoDuration("quarter"), 4));
+seq.add(GingoEvent::noteEvent(GingoNote("E"), GingoDuration("quarter"), 4));
+
+uint8_t buf[256];
+uint16_t len = seq.toMIDI(buf, sizeof(buf), 1);  // Export to MIDI bytes
+```
+
+#### Exemplos MIDI
+
+| Exemplo | Descricao | Tier |
+|---------|-----------|------|
+| MIDI_to_Gingoduino | Recebe MIDI USB/BLE, analisa com Gingoduino | 3 |
+| RealtimeChordIdentifier | Identifica acordes de notas simultâneas | 3 |
+| Gingoduino_to_MIDI | Cria sequência, exporta como MIDI serial | 3 |
+
+### Native Tests
 
 ```bash
 g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra \
@@ -365,7 +479,7 @@ g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra \
     && ./extras/tests/test_native
 ```
 
-177 testes, 0 falhas. Sem framework Arduino.
+208 testes, 0 falhas. Sem framework Arduino.
 
 ### Licenca
 
