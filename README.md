@@ -4,7 +4,7 @@
 
 # 🪇 Gingo[duino]
 
-**Music Theory Library for Embedded Systems**
+**Music Theory Engine for Embedded Systems**
 **Biblioteca de Teoria Musical para Sistemas Embarcados**
 
 ---
@@ -13,7 +13,7 @@
 
 ### Overview
 
-Gingoduino is a music theory library for embedded systems. It brings notes, intervals, chords, scales, harmonic fields, fretboard engine, musical events, and sequences to Arduino, ESP32, Teensy, Daisy Seed, Raspberry Pi Pico, and other platforms.
+Gingoduino is a music theory engine for embedded systems. It brings notes, intervals, chords, scales, harmonic fields, fretboard engine, musical events, and sequences to Arduino, ESP32, Teensy, Daisy Seed, Raspberry Pi Pico, and other platforms.
 
 Built as a port of the [gingo C++17 library](https://github.com/sauloverissimo/gingo). Zero-heap architecture, PROGMEM lookup tables, C++11 compatible.
 
@@ -265,7 +265,7 @@ MIT License — See [LICENSE](LICENSE)
 
 ### Visao Geral
 
-Gingoduino e uma biblioteca de teoria musical para sistemas embarcados. Traz notas, intervalos, acordes, escalas, campos harmonicos, engine de instrumentos de cordas, eventos musicais e sequencias para Arduino, ESP32, Teensy, Daisy Seed, Raspberry Pi Pico e outras plataformas.
+Gingoduino é um motor de teoria musical para sistemas embarcados. Traz notas, intervalos, acordes, escalas, campos harmônicos, engine de instrumentos de cordas, eventos musicais e sequências para Arduino, ESP32, Teensy, Daisy Seed, Raspberry Pi Pico e outras plataformas.
 
 Port da [biblioteca gingo C++17](https://github.com/sauloverissimo/gingo). Arquitetura zero-heap, tabelas PROGMEM, compativel C++11.
 
