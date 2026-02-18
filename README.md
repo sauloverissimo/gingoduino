@@ -4,8 +4,7 @@
 
 # 🪇 Gingo[duino]
 
-**Music Theory Engine for Embedded Systems**
-**Biblioteca de Teoria Musical para Sistemas Embarcados**
+**Music Theory Engine for Embedded Systems** | **Biblioteca de Teoria Musical para Sistemas Embarcados**
 
 ---
 
@@ -236,11 +235,13 @@ Interactive demo on LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI) with r
 
 **Pages:**
 
-| | |
-|:---:|:---:|
-| <img src="examples/TDisplayS3Explorer/images/tdisplay1.jpeg" alt="Note Explorer" width="280"><br>**Note Explorer** — MIDI, frequency, chromatic bar | <img src="examples/TDisplayS3Explorer/images/tdisplay4.jpeg" alt="Interval Explorer" width="280"><br>**Interval Explorer** — Consonance, full names EN/PT |
-| <img src="examples/TDisplayS3Explorer/images/tdisplay2.jpeg" alt="Chord Explorer" width="280"><br>**Chord Explorer** — Notes, intervals, consonance colors | <img src="examples/TDisplayS3Explorer/images/tdisplay3.jpeg" alt="Scale Explorer" width="280"><br>**Scale Explorer** — Brightness, relative/parallel |
-| <img src="examples/TDisplayS3Explorer/images/tdisplay5.jpg" alt="Fretboard" width="280"><br>**Fretboard** — Chord fingerings and scale overlays | |
+| Page | Description |
+|:---:|:---|
+| <img src="examples/TDisplayS3Explorer/images/tdisplay1.jpeg" alt="Note Explorer" width="200"> | **Note Explorer** — MIDI, frequency, chromatic bar |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay4.jpeg" alt="Interval Explorer" width="200"> | **Interval Explorer** — Consonance, full names EN/PT |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay2.jpeg" alt="Chord Explorer" width="200"> | **Chord Explorer** — Notes, intervals, consonance colors |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay3.jpeg" alt="Scale Explorer" width="200"> | **Scale Explorer** — Brightness, relative/parallel |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay5.jpg" alt="Fretboard" width="200"> | **Fretboard** — Chord fingerings and scale overlays |
 
 Additional pages: **Harmonic Field** (triads, T/S/D functions, sevenths) and **Sequence** (timeline with beat grid).
 
@@ -414,15 +415,17 @@ Demo interativo no LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI) com sin
 
 **Navegacao:** BOOT = trocar pagina, KEY = proximo item.
 
-**Paginas:**
+**Páginas:**
 
-| | |
-|:---:|:---:|
-| <img src="examples/TDisplayS3Explorer/images/tdisplay1.jpeg" alt="Note Explorer" width="280"><br>**Note Explorer** — MIDI, frequencia, barra cromatica | <img src="examples/TDisplayS3Explorer/images/tdisplay4.jpeg" alt="Interval Explorer" width="280"><br>**Interval Explorer** — Consonancia, nomes EN/PT |
-| <img src="examples/TDisplayS3Explorer/images/tdisplay2.jpeg" alt="Chord Explorer" width="280"><br>**Chord Explorer** — Notas, intervalos, cores de consonancia | <img src="examples/TDisplayS3Explorer/images/tdisplay3.jpeg" alt="Scale Explorer" width="280"><br>**Scale Explorer** — Brilho, relativa/paralela |
-| <img src="examples/TDisplayS3Explorer/images/tdisplay5.jpg" alt="Fretboard" width="280"><br>**Fretboard** — Digitacoes de acordes e overlay de escalas | |
+| Página | Descrição |
+|:---:|:---|
+| <img src="examples/TDisplayS3Explorer/images/tdisplay1.jpeg" alt="Note Explorer" width="200"> | **Note Explorer** — MIDI, frequência, barra cromática |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay4.jpeg" alt="Interval Explorer" width="200"> | **Interval Explorer** — Consonância, nomes EN/PT |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay2.jpeg" alt="Chord Explorer" width="200"> | **Chord Explorer** — Notas, intervalos, cores de consonância |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay3.jpeg" alt="Scale Explorer" width="200"> | **Scale Explorer** — Brilho, relativa/paralela |
+| <img src="examples/TDisplayS3Explorer/images/tdisplay5.jpg" alt="Fretboard" width="200"> | **Fretboard** — Digitações de acordes e overlay de escalas |
 
-Paginas adicionais: **Harmonic Field** (triades, funcoes T/S/D, tetrades) e **Sequence** (timeline com grid de beats).
+Páginas adicionais: **Harmonic Field** (tríades, funções T/S/D, tétrades) e **Sequence** (timeline com grid de beats).
 
 ### MIDI Support (v0.2.0+)
 
