@@ -105,6 +105,75 @@ e.toMIDI(buf);         // Uses internal velocity/channel
 
 ---
 
+## v0.2.2 (✅ Released — Feb 2026)
+
+### A. Field::deduce() ✅ **DONE**
+
+**Goal:** Infer probable harmonic fields from notes or chords
+
+```cpp
+const char* items[] = {"CM", "FM", "G7", "Am"};
+FieldMatch results[5];
+uint8_t n = GingoField::deduce(items, 4, results, 5);
+// results[0]: C Major, matched=4, roles: I, IV, V7, VI
+```
+
+**Implemented:**
+- ✅ Static method scanning 60 candidates (12 tonics × 5 scale types)
+- ✅ Auto-detects input type (notes vs chords)
+- ✅ Returns ranked FieldMatch with roman numeral roles
+- ✅ Supports triads and seventh chord matching
+
+### B. GingoTree ✅ **DONE**
+
+**Goal:** Directed harmonic graph with tradition-specific transition rules
+
+```cpp
+GingoTree t("C", SCALE_MAJOR, 0);  // harmonic_tree
+t.isValid("I", "V7");              // true
+t.isValid("I", "IVm");             // false
+
+char chord[16];
+t.resolve("V7 / IIm", chord, 16); // "A7"
+```
+
+**Implemented:**
+- ✅ 2 traditions: harmonic_tree (José de Alencar Soares), jazz
+- ✅ Major and minor contexts
+- ✅ isValid(), isValidSequence(), countValidTransitions()
+- ✅ neighbors() — list valid next branches
+- ✅ resolve() — convert branch names to concrete chords
+- ✅ ~1.3 KB PROGMEM (41 branches, 129 edges)
+
+### C. GingoProgression ✅ **DONE**
+
+**Goal:** Analyze and predict harmonic progressions
+
+```cpp
+GingoProgression p("C", SCALE_MAJOR);
+
+// Identify
+const char* seq[] = {"IIm", "V7", "I"};
+ProgressionMatch m;
+p.identify(seq, 3, &m);  // jazz, "ii-V-I", score=100
+
+// Predict
+const char* partial[] = {"IIm", "V7"};
+ProgressionRoute routes[8];
+uint8_t n = p.predict(partial, 2, routes, 8);
+// routes[0]: next="I", confidence=100
+```
+
+**Implemented:**
+- ✅ identify() — single best tradition/schema match
+- ✅ deduce() — all probable matches, ranked by score
+- ✅ predict() — suggest next branches with confidence
+- ✅ 17 schemas: 10 harmonic_tree + 7 jazz
+
+**Result:** 275 native tests passing (was 208). Tree and Progression complete Tier 3.
+
+---
+
 ## v0.3.0 (Future)
 
 ### A. MusicXML Export (Optional)
@@ -196,8 +265,8 @@ midiOut.send(gingoSequence);  // Auto-converts
 
 Port remaining modules from gingo C++17 if valuable:
 
-- **Tree** (harmonic progressions via graph)
-- **Progression** (cross-tradition progressions)
+- ~~**Tree** (harmonic progressions via graph)~~ ✅ Done in v0.2.2
+- ~~**Progression** (cross-tradition progressions)~~ ✅ Done in v0.2.2
 - **ChordComparison** (Neo-Riemannian, Forte numbers, voice leading)
 - **Piano** visualization
 
@@ -222,7 +291,7 @@ Port remaining modules from gingo C++17 if valuable:
 Keep using tier system:
 - **Tier 1** (AVR): Note, Interval, Chord only
 - **Tier 2** (ESP8266): + Scales, Fields, Fretboard
-- **Tier 3** (ESP32+): + Events, Sequences
+- **Tier 3** (ESP32+): + Events, Sequences, Tree, Progression
 
 Additional tiers possible:
 - **Tier 4** (future): MIDI I/O, JSON export (if added)
@@ -240,7 +309,7 @@ Additional tiers possible:
 ### For Gingoduino Core
 - Keep it light, testable, portable
 - No external dependencies
-- All code must pass 177+ tests
+- All code must pass 275+ tests
 - Update tests when adding features
 
 ### For Integration (v0.2+)
@@ -260,6 +329,7 @@ Additional tiers possible:
 - **v0.1.0**: Initial Arduino Library Manager (Feb 2026) ✅
 - **v0.2.0**: MIDI I/O + examples (Feb 2026) ✅
 - **v0.2.1**: MIDI velocity & channel per event (Feb 2026) ✅
+- **v0.2.2**: Field deduce, Tree & Progression (Feb 2026) ✅
 - **v0.3.0**: Frequency analysis + harmonic context (Q3 2026)
 - **v0.4.0**: Voicing generation + voice leading (Q4 2026)
 - **v1.0.0**: Stable API + community feedback (2027+)
@@ -304,7 +374,7 @@ Additional tiers possible:
 **A:** In v0.2: `GingoNote note = GingoNote::fromMIDI(60);`
 
 ### Q: Is Gingoduino 1:1 with gingo?
-**A:** No. Gingoduino is a **port**, not a full port. Some features (Piano, Tree) dropped for embedded constraints. APIs are similar but not identical.
+**A:** No. Gingoduino is a **port**, not a full port. Some features (Piano, ChordComparison) dropped for embedded constraints. APIs are similar but not identical. Tree and Progression were added in v0.2.2.
 
 ### Q: Can I use Gingoduino on my synth?
 **A:** Yes! Gingoduino provides the music theory. You add MIDI/audio via separate libraries or custom code.
