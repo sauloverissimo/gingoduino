@@ -51,6 +51,10 @@ static const char* const ROLE_TABLE_MAJOR[7] PROGMEM = {
 // Constructors
 // ---------------------------------------------------------------------------
 
+GingoField::GingoField()
+    : scale_("C", SCALE_MAJOR)
+{}
+
 GingoField::GingoField(const char* tonic, ScaleType type)
     : scale_(tonic, type)
 {}
@@ -167,6 +171,178 @@ const char* GingoField::roleOf(const GingoChord& chord, char* buf, uint8_t maxLe
 const char* GingoField::roleOf(const char* chordName, char* buf, uint8_t maxLen) const {
     GingoChord c(chordName);
     return roleOf(c, buf, maxLen);
+}
+
+// ---------------------------------------------------------------------------
+// deduce — infer probable harmonic fields from notes or chords
+// ---------------------------------------------------------------------------
+
+// Helper: detect if string looks like a bare note (1-2 chars, A-G + optional #/b)
+static bool looksLikeNote(const char* s) {
+    if (!s || !s[0]) return false;
+    char c = s[0];
+    if (c < 'A' || c > 'G') return false;
+    if (s[1] == '\0') return true;
+    if ((s[1] == '#' || s[1] == 'b') && s[2] == '\0') return true;
+    if (s[1] == '#' && s[2] == '#' && s[3] == '\0') return true;
+    if (s[1] == 'b' && s[2] == 'b' && s[3] == '\0') return true;
+    return false;
+}
+
+// Helper: simple insertion sort for FieldMatch by (matched desc, scaleType asc)
+static void sortMatches(FieldMatch* arr, uint8_t n) {
+    for (uint8_t i = 1; i < n; i++) {
+        FieldMatch key = arr[i];
+        int8_t j = (int8_t)(i - 1);
+        while (j >= 0 && (arr[j].matched < key.matched ||
+               (arr[j].matched == key.matched && arr[j].scaleType > key.scaleType))) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
+    }
+}
+
+uint8_t GingoField::deduce(const char* const* items, uint8_t itemCount,
+                           FieldMatch* output, uint8_t maxResults) {
+    if (itemCount == 0 || maxResults == 0) return 0;
+
+    // Detect input type from first item
+    bool noteMode = looksLikeNote(items[0]);
+
+    // Candidate scale types (same 5 as gingo)
+    static const ScaleType DEDUCE_TYPES[] = {
+        SCALE_MAJOR, SCALE_NATURAL_MINOR, SCALE_HARMONIC_MINOR,
+        SCALE_MELODIC_MINOR, SCALE_HARMONIC_MAJOR
+    };
+
+    // Chromatic tonic names
+    static const char* const TONICS[12] = {
+        "C", "C#", "D", "D#", "E", "F",
+        "F#", "G", "G#", "A", "A#", "B"
+    };
+
+    // Collect all candidates in a temporary buffer (max 60)
+    // We use maxResults as output cap but need to compare all 60 internally
+    FieldMatch candidates[60];
+    uint8_t candCount = 0;
+
+    for (uint8_t t = 0; t < 5; t++) {
+        ScaleType st = DEDUCE_TYPES[t];
+        for (uint8_t k = 0; k < 12; k++) {
+            GingoField field(TONICS[k], st);
+            uint8_t matched = 0;
+            uint8_t roleCount = 0;
+
+            FieldMatch& fm = candidates[candCount];
+            fm.tonicName = TONICS[k];
+            fm.scaleType = st;
+            fm.total = itemCount;
+            fm.roleCount = 0;
+
+            if (noteMode) {
+                // Note mode: check if each note's pitch class belongs to the scale
+                for (uint8_t i = 0; i < itemCount; i++) {
+                    GingoNote n(items[i]);
+                    uint8_t deg = field.scale().degreeOf(n);
+                    if (deg > 0) {
+                        matched++;
+                        if (roleCount < 7) {
+                            // Write roman numeral degree
+                            static const char* const ROMAN[] = {
+                                "", "I", "II", "III", "IV", "V", "VI", "VII"
+                            };
+                            if (deg <= 7) {
+                                uint8_t ri = 0;
+                                const char* rom = ROMAN[deg];
+                                while (rom[ri] && ri < 7) {
+                                    fm.roles[roleCount][ri] = rom[ri];
+                                    ri++;
+                                }
+                                fm.roles[roleCount][ri] = '\0';
+                                roleCount++;
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Chord mode: check if each chord matches a triad or seventh
+                GingoChord triads[7];
+                GingoChord seventhsArr[7];
+                uint8_t nTriads = field.chords(triads, 7);
+                uint8_t nSevenths = field.sevenths(seventhsArr, 7);
+
+                for (uint8_t i = 0; i < itemCount; i++) {
+                    GingoChord inputChord(items[i]);
+                    uint8_t inputRoot = inputChord.root().semitone();
+                    const char* inputType = inputChord.type();
+                    bool found = false;
+
+                    // Check triads
+                    for (uint8_t d = 0; d < nTriads && !found; d++) {
+                        if (triads[d].root().semitone() == inputRoot &&
+                            strcmp(triads[d].type(), inputType) == 0) {
+                            found = true;
+                            if (roleCount < 7) {
+                                static const char* const ROMAN[] = {
+                                    "I", "II", "III", "IV", "V", "VI", "VII"
+                                };
+                                uint8_t ri = 0;
+                                const char* rom = ROMAN[d];
+                                while (rom[ri] && ri < 7) {
+                                    fm.roles[roleCount][ri] = rom[ri];
+                                    ri++;
+                                }
+                                fm.roles[roleCount][ri] = '\0';
+                                roleCount++;
+                            }
+                        }
+                    }
+
+                    // Check sevenths
+                    for (uint8_t d = 0; d < nSevenths && !found; d++) {
+                        if (seventhsArr[d].root().semitone() == inputRoot &&
+                            strcmp(seventhsArr[d].type(), inputType) == 0) {
+                            found = true;
+                            if (roleCount < 7) {
+                                static const char* const ROMAN7[] = {
+                                    "I7", "II7", "III7", "IV7", "V7", "VI7", "VII7"
+                                };
+                                uint8_t ri = 0;
+                                const char* rom = ROMAN7[d];
+                                while (rom[ri] && ri < 7) {
+                                    fm.roles[roleCount][ri] = rom[ri];
+                                    ri++;
+                                }
+                                fm.roles[roleCount][ri] = '\0';
+                                roleCount++;
+                            }
+                        }
+                    }
+
+                    if (found) matched++;
+                }
+            }
+
+            fm.matched = matched;
+            fm.roleCount = roleCount;
+
+            // Only keep candidates with at least one match
+            if (matched > 0) {
+                candCount++;
+            }
+        }
+    }
+
+    // Sort by matched desc, then scaleType asc
+    sortMatches(candidates, candCount);
+
+    // Copy top results
+    uint8_t written = (candCount < maxResults) ? candCount : maxResults;
+    for (uint8_t i = 0; i < written; i++) {
+        output[i] = candidates[i];
+    }
+    return written;
 }
 
 } // namespace gingoduino

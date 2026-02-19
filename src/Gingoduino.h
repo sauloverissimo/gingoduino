@@ -48,12 +48,18 @@
   #include "GingoFretboard.h"
 #endif
 
-// Tier 3: Event, Sequence
+// Tier 3: Event, Sequence, Tree, Progression
 #if GINGODUINO_HAS_EVENT
   #include "GingoEvent.h"
 #endif
 #if GINGODUINO_HAS_SEQUENCE
   #include "GingoSequence.h"
+#endif
+#if GINGODUINO_HAS_TREE
+  #include "GingoTree.h"
+#endif
+#if GINGODUINO_HAS_PROGRESSION
+  #include "GingoProgression.h"
 #endif
 
 #endif // GINGODUINO_H

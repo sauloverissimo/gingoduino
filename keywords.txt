@@ -82,6 +82,7 @@ function	KEYWORD2
 role	KEYWORD2
 functionOf	KEYWORD2
 roleOf	KEYWORD2
+deduce	KEYWORD2
 
 # GingoDuration methods
 dots	KEYWORD2
@@ -139,6 +140,25 @@ scalePositions	KEYWORD2
 fingering	KEYWORD2
 fingerings	KEYWORD2
 capo	KEYWORD2
+
+# GingoTree class and methods
+GingoTree	KEYWORD1
+isValid	KEYWORD2
+isValidSequence	KEYWORD2
+countValidTransitions	KEYWORD2
+neighbors	KEYWORD2
+resolve	KEYWORD2
+traditionId	KEYWORD2
+traditionName	KEYWORD2
+context	KEYWORD2
+
+# GingoProgression class and methods
+GingoProgression	KEYWORD1
+FieldMatch	KEYWORD1
+ProgressionMatch	KEYWORD1
+ProgressionRoute	KEYWORD1
+predict	KEYWORD2
+tree	KEYWORD2
 
 # Scale type constants
 SCALE_MAJOR	LITERAL1

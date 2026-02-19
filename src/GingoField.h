@@ -25,8 +25,19 @@ namespace gingoduino {
 ///   GingoChord triads[7];
 ///   f.chords(triads, 7);
 ///   // triads: CM, Dm, Em, FM, GM, Am, Bdim
+/// Result of GingoField::deduce() — a candidate harmonic field match.
+struct FieldMatch {
+    const char* tonicName;   // tonic name (points to internal static buffer)
+    ScaleType   scaleType;   // scale type of the candidate field
+    uint8_t     matched;     // how many input items belong to this field
+    uint8_t     total;       // how many input items were given
+    char        roles[7][8]; // roman numeral roles for matched items
+    uint8_t     roleCount;   // how many roles filled
+};
+
 class GingoField {
 public:
+    GingoField();
     GingoField(const char* tonic, ScaleType type);
     GingoField(const char* tonic, const char* typeName);
 
@@ -73,6 +84,12 @@ public:
 
     /// Number of degrees.
     uint8_t size() const { return scale_.size(); }
+
+    /// Deduce the most probable harmonic fields from a set of notes or chords.
+    /// Items can be note names ("C", "E", "G") or chord names ("CM", "Dm", "G7").
+    /// Returns the number of results written to output, sorted by score desc.
+    static uint8_t deduce(const char* const* items, uint8_t itemCount,
+                          FieldMatch* output, uint8_t maxResults);
 
 private:
     GingoScale scale_;
