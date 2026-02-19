@@ -14,6 +14,33 @@ Music is generated mathematically (sine wave synthesis) and sent to the PCM5102 
 - **T-Display-S3 MIDI Shield v1.1** with PCM5102 DAC module
 - Headphones or speakers (3.5mm input)
 
+### Required Libraries
+
+| Library | Source |
+|---------|--------|
+| **TFT_eSPI** (by Bodmer, v2.5.43+) | Arduino Library Manager |
+| **Gingoduino** | Arduino Library Manager or symlink |
+| `driver/i2s.h` | Included with ESP32 Arduino core (no install needed) |
+
+#### TFT_eSPI configuration (mandatory)
+
+After installing TFT_eSPI, you must configure it for the T-Display-S3.
+Locate the library folder and edit `User_Setup_Select.h`:
+
+- **Windows:** `C:\Users\<YourName>\Documents\Arduino\libraries\TFT_eSPI\User_Setup_Select.h`
+- **macOS/Linux:** `~/Documents/Arduino/libraries/TFT_eSPI/User_Setup_Select.h`
+
+```cpp
+// Comment out the default setup:
+//#include <User_Setup.h>
+
+// Uncomment the T-Display-S3 setup:
+#include <User_Setups/Setup206_LilyGo_T_Display_S3.h>
+```
+
+> **Note:** This change must be repeated every time the TFT_eSPI library is updated.
+> Without this step the display will remain black.
+
 #### I2S Pinout (confirmed on V1.1 hardware)
 ```
 T-Display-S3         R (470Ohm)   PCM5102
@@ -188,6 +215,33 @@ A musica e gerada matematicamente (sine wave synthesis) e enviada ao DAC PCM5102
 - **LilyGo T-Display-S3** (ESP32-S3 + tela ST7789)
 - **T-Display-S3 MIDI Shield v1.1** com modulo DAC PCM5102
 - Fone de ouvido ou caixa de som (entrada 3.5mm)
+
+### Bibliotecas Necessarias
+
+| Biblioteca | Fonte |
+|------------|-------|
+| **TFT_eSPI** (by Bodmer, v2.5.43+) | Arduino Library Manager |
+| **Gingoduino** | Arduino Library Manager ou symlink |
+| `driver/i2s.h` | Incluida no core ESP32 Arduino (sem instalacao) |
+
+#### Configuracao do TFT_eSPI (obrigatoria)
+
+Apos instalar o TFT_eSPI, e necessario configura-lo para o T-Display-S3.
+Localize a pasta da biblioteca e edite o `User_Setup_Select.h`:
+
+- **Windows:** `C:\Users\<SeuNome>\Documents\Arduino\libraries\TFT_eSPI\User_Setup_Select.h`
+- **macOS/Linux:** `~/Documents/Arduino/libraries/TFT_eSPI/User_Setup_Select.h`
+
+```cpp
+// Comente a linha do setup padrao:
+//#include <User_Setup.h>
+
+// Descomente a linha do T-Display-S3:
+#include <User_Setups/Setup206_LilyGo_T_Display_S3.h>
+```
+
+> **Atencao:** Esta alteracao precisa ser refeita toda vez que o TFT_eSPI for atualizado.
+> Sem este passo, a tela permanecera preta.
 
 #### Pinagem I2S (conforme schema V1.1)
 ```
