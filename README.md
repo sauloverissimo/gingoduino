@@ -62,7 +62,7 @@ void setup() {
 
     GingoNote fifth = note.transpose(7);   // G
 
-    GingoChord chord("Cm7");
+    GingoChord chord("Dm7");
     GingoNote notes[7];
     uint8_t n = chord.notes(notes, 7);     // D, F, A, C
 
@@ -110,9 +110,9 @@ GingoInterval sum = iv + other; // capped at 23
 
 #### GingoChord
 ```cpp
-GingoChord chord("Cm7");
-chord.name();                         // "Cm7"
-chord.root();                         // GingoNote("C")
+GingoChord chord("Dm7");
+chord.name();                         // "Dm7"
+chord.root();                         // GingoNote("D")
 chord.type();                         // "m7"
 chord.size();                         // 4
 
@@ -378,7 +378,7 @@ void setup() {
 
     GingoNote quinta = nota.transpose(7);  // G
 
-    GingoChord acorde("Cm7");
+    GingoChord acorde("Dm7");
     GingoNote notas[7];
     uint8_t n = acorde.notes(notas, 7);
 
