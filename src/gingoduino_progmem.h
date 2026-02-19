@@ -543,6 +543,384 @@ static const uint8_t TUNING_UKULELE[4] PROGMEM = { 67, 60, 64, 69 };
 #endif // GINGODUINO_HAS_FRETBOARD
 
 // ===================================================================
+// 12. PROGRESSION / TREE DATA — harmonic graph traditions
+// ===================================================================
+
+#if GINGODUINO_HAS_TREE
+
+// --------------- Tradition IDs ---------------
+// 0 = harmonic_tree (José de Alencar Soares model)
+// 1 = jazz
+
+#define PROG_TRADITION_COUNT 2
+#define PROG_TRADITION_HARMONIC_TREE 0
+#define PROG_TRADITION_JAZZ          1
+
+// --------------- Scale context IDs ---------------
+// 0 = major, 1 = minor
+// (harmonic minor and melodic minor share the minor context)
+
+#define PROG_CTX_MAJOR 0
+#define PROG_CTX_MINOR 1
+#define PROG_CTX_COUNT 2
+
+// --------------- Branch name string pool ---------------
+// All unique branch names across both traditions.
+// Index is the branch ID used in edges and schemas.
+
+static const char BR_00[] PROGMEM = "I";
+static const char BR_01[] PROGMEM = "IIm / IV";
+static const char BR_02[] PROGMEM = "IIm7(b5) / IIm";
+static const char BR_03[] PROGMEM = "IIm7(11) / IV";
+static const char BR_04[] PROGMEM = "SUBV7 / IV";
+static const char BR_05[] PROGMEM = "V7 / IV";
+static const char BR_06[] PROGMEM = "VIm";
+static const char BR_07[] PROGMEM = "V7 / IIm";
+static const char BR_08[] PROGMEM = "Idim";
+static const char BR_09[] PROGMEM = "#Idim";
+static const char BR_10[] PROGMEM = "bIIIdim";
+static const char BR_11[] PROGMEM = "IV#dim";
+static const char BR_12[] PROGMEM = "IV";
+static const char BR_13[] PROGMEM = "V7 / V";
+static const char BR_14[] PROGMEM = "IIm";
+static const char BR_15[] PROGMEM = "IVm";
+static const char BR_16[] PROGMEM = "bVI";
+static const char BR_17[] PROGMEM = "bVII";
+static const char BR_18[] PROGMEM = "IIm7(b5)";
+static const char BR_19[] PROGMEM = "II#dim";
+static const char BR_20[] PROGMEM = "SUBV7";
+static const char BR_21[] PROGMEM = "V7";
+static const char BR_22[] PROGMEM = "V7 / VI";
+static const char BR_23[] PROGMEM = "V7 / Im";
+static const char BR_24[] PROGMEM = "V7 / III";
+static const char BR_25[] PROGMEM = "V7 / bIII";
+static const char BR_26[] PROGMEM = "V7 / bVI";
+// Minor-specific branches
+static const char BR_27[] PROGMEM = "Im";
+static const char BR_28[] PROGMEM = "IIm7(b5) / Ivm";
+static const char BR_29[] PROGMEM = "IVm7 / IVm";
+static const char BR_30[] PROGMEM = "V / IVm";
+static const char BR_31[] PROGMEM = "V / V";
+static const char BR_32[] PROGMEM = "bVI / Im";
+static const char BR_33[] PROGMEM = "II / IIm";
+static const char BR_34[] PROGMEM = "bV / V";
+static const char BR_35[] PROGMEM = "V7 / I";
+static const char BR_36[] PROGMEM = "bIII";
+static const char BR_37[] PROGMEM = "Vm";
+// Jazz-specific
+static const char BR_38[] PROGMEM = "IIIm";
+static const char BR_39[] PROGMEM = "VIIdim";
+static const char BR_40[] PROGMEM = "#IIdim";
+static const char BR_41[] PROGMEM = "V7 / V";  // (reuse ID 13 in edges)
+
+#define PROG_BRANCH_COUNT 41
+
+static const char* const PROG_BRANCH_NAMES[PROG_BRANCH_COUNT] PROGMEM = {
+    BR_00, BR_01, BR_02, BR_03, BR_04, BR_05, BR_06, BR_07, BR_08, BR_09,
+    BR_10, BR_11, BR_12, BR_13, BR_14, BR_15, BR_16, BR_17, BR_18, BR_19,
+    BR_20, BR_21, BR_22, BR_23, BR_24, BR_25, BR_26, BR_27, BR_28, BR_29,
+    BR_30, BR_31, BR_32, BR_33, BR_34, BR_35, BR_36, BR_37, BR_38, BR_39,
+    BR_40
+};
+
+// --------------- Tradition names ---------------
+static const char TRAD_NAME_0[] PROGMEM = "harmonic_tree";
+static const char TRAD_NAME_1[] PROGMEM = "jazz";
+
+static const char* const PROG_TRADITION_NAMES[PROG_TRADITION_COUNT] PROGMEM = {
+    TRAD_NAME_0, TRAD_NAME_1
+};
+
+// --------------- Directed edges (paths) ---------------
+// Each edge: {origin_branch_id, target_branch_id}
+// Grouped by [tradition][context]
+
+struct ProgEdge {
+    uint8_t origin;
+    uint8_t target;
+};
+
+// ---- harmonic_tree, major (57 edges) ----
+static const ProgEdge HT_MAJOR_EDGES[] PROGMEM = {
+    {0, 0},     // I → I
+    {0, 1},     // I → IIm / IV
+    {0, 2},     // I → IIm7(b5) / IIm
+    {0, 3},     // I → IIm7(11) / IV
+    {0, 6},     // I → VIm
+    {0, 9},     // I → #Idim
+    {0, 10},    // I → bIIIdim
+    {0, 21},    // I → V7
+    {0, 22},    // I → V7 / VI
+    {0, 8},     // I → Idim
+    {1, 5},     // IIm / IV → V7 / IV
+    {2, 7},     // IIm7(b5) / IIm → V7 / IIm
+    {3, 4},     // IIm7(11) / IV → SUBV7 / IV
+    {4, 12},    // SUBV7 / IV → IV
+    {5, 12},    // V7 / IV → IV
+    {6, 12},    // VIm → IV
+    {7, 14},    // V7 / IIm → IIm
+    {7, 13},    // V7 / IIm → V7 / V
+    {8, 14},    // Idim → IIm
+    {8, 13},    // Idim → V7 / V
+    {9, 14},    // #Idim → IIm
+    {9, 13},    // #Idim → V7 / V
+    {10, 14},   // bIIIdim → IIm
+    {10, 13},   // bIIIdim → V7 / V
+    {12, 11},   // IV → IV#dim
+    {12, 15},   // IV → IVm
+    {12, 16},   // IV → bVI
+    {12, 17},   // IV → bVII
+    {12, 21},   // IV → V7
+    {12, 18},   // IV → IIm7(b5)
+    {11, 21},   // IV#dim → V7
+    {11, 0},    // IV#dim → I
+    {13, 14},   // V7 / V → IIm
+    {13, 21},   // V7 / V → V7
+    {13, 20},   // V7 / V → SUBV7
+    {13, 15},   // V7 / V → IVm
+    {13, 16},   // V7 / V → bVI
+    {13, 17},   // V7 / V → bVII
+    {13, 18},   // V7 / V → IIm7(b5)
+    {14, 21},   // IIm → V7
+    {14, 13},   // IIm → V7 / V
+    {14, 15},   // IIm → IVm
+    {14, 16},   // IIm → bVI
+    {14, 17},   // IIm → bVII
+    {14, 18},   // IIm → IIm7(b5)
+    {14, 20},   // IIm → SUBV7
+    {14, 19},   // IIm → II#dim
+    {15, 21},   // IVm → V7
+    {15, 0},    // IVm → I
+    {16, 0},    // bVI → I
+    {16, 21},   // bVI → V7
+    {17, 0},    // bVII → I
+    {17, 21},   // bVII → V7
+    {18, 0},    // IIm7(b5) → I
+    {18, 21},   // IIm7(b5) → V7
+    {20, 0},    // SUBV7 → I
+    {21, 0},    // V7 → I
+    {19, 0},    // II#dim → I
+};
+#define HT_MAJOR_EDGE_COUNT (sizeof(HT_MAJOR_EDGES) / sizeof(HT_MAJOR_EDGES[0]))
+
+// ---- harmonic_tree, minor (25 edges) ----
+static const ProgEdge HT_MINOR_EDGES[] PROGMEM = {
+    {27, 27},   // Im → Im
+    {27, 28},   // Im → IIm7(b5) / Ivm
+    {27, 33},   // Im → II / IIm
+    {27, 31},   // Im → V / V
+    {27, 32},   // Im → bVI / Im
+    {27, 35},   // Im → V7 / I
+    {27, 17},   // Im → bVII
+    {28, 29},   // IIm7(b5) / Ivm → IVm7 / IVm
+    {29, 30},   // IVm7 / IVm → V / IVm
+    {30, 15},   // V / IVm → IVm
+    {31, 35},   // V / V → V7 / I
+    {32, 27},   // bVI / Im → Im
+    {33, 15},   // II / IIm → IVm
+    {15, 35},   // IVm → V7 / I
+    {15, 11},   // IVm → IV#dim
+    {11, 35},   // IV#dim → V7 / I
+    {11, 27},   // IV#dim → Im
+    {35, 27},   // V7 / I → Im
+    {24, 27},   // V7 / III → Im
+    {13, 35},   // V7 / V → V7 / I
+    {17, 36},   // bVII → bIII
+    {17, 15},   // bVII → IVm
+    {36, 15},   // bIII → IVm
+    {36, 35},   // bIII → V7 / I
+    {37, 27},   // Vm → Im
+};
+#define HT_MINOR_EDGE_COUNT (sizeof(HT_MINOR_EDGES) / sizeof(HT_MINOR_EDGES[0]))
+
+// ---- jazz, major (32 edges) ----
+static const ProgEdge JZ_MAJOR_EDGES[] PROGMEM = {
+    {0, 0},     // I → I
+    {0, 14},    // I → IIm
+    {0, 12},    // I → IV
+    {0, 6},     // I → VIm
+    {0, 38},    // I → IIIm
+    {0, 7},     // I → V7 / IIm
+    {0, 5},     // I → V7 / IV
+    {0, 22},    // I → V7 / VI
+    {0, 21},    // I → V7
+    {14, 21},   // IIm → V7
+    {21, 0},    // V7 → I
+    {6, 14},    // VIm → IIm
+    {14, 13},   // IIm → V7 / V
+    {38, 6},    // IIIm → VIm
+    {12, 21},   // IV → V7
+    {12, 15},   // IV → IVm
+    {12, 14},   // IV → IIm
+    {15, 17},   // IVm → bVII
+    {17, 0},    // bVII → I
+    {15, 21},   // IVm → V7
+    {14, 20},   // IIm → SUBV7
+    {20, 0},    // SUBV7 → I
+    {7, 14},    // V7 / IIm → IIm
+    {5, 12},    // V7 / IV → IV
+    {13, 21},   // V7 / V → V7
+    {22, 6},    // V7 / VI → VIm
+    {9, 14},    // #Idim → IIm
+    {40, 38},   // #IIdim → IIIm
+    {16, 0},    // bVI → I
+    {16, 21},   // bVI → V7
+    {18, 21},   // IIm7(b5) → V7
+    {39, 0},    // VIIdim → I
+};
+#define JZ_MAJOR_EDGE_COUNT (sizeof(JZ_MAJOR_EDGES) / sizeof(JZ_MAJOR_EDGES[0]))
+
+// ---- jazz, minor (15 edges) ----
+static const ProgEdge JZ_MINOR_EDGES[] PROGMEM = {
+    {27, 27},   // Im → Im
+    {27, 18},   // Im → IIm7(b5)
+    {27, 15},   // Im → IVm
+    {27, 16},   // Im → bVI
+    {27, 17},   // Im → bVII
+    {27, 13},   // Im → V7 / V
+    {27, 12},   // Im → IV
+    {18, 21},   // IIm7(b5) → V7
+    {21, 27},   // V7 → Im
+    {15, 21},   // IVm → V7
+    {16, 17},   // bVI → bVII
+    {17, 27},   // bVII → Im
+    {36, 15},   // bIII → IVm
+    {13, 21},   // V7 / V → V7
+    {12, 21},   // IV → V7
+};
+#define JZ_MINOR_EDGE_COUNT (sizeof(JZ_MINOR_EDGES) / sizeof(JZ_MINOR_EDGES[0]))
+
+// Edge table index: [tradition][context]
+struct ProgEdgeTable {
+    const ProgEdge* edges;
+    uint8_t         count;
+};
+
+static const ProgEdgeTable PROG_EDGE_TABLES[PROG_TRADITION_COUNT][PROG_CTX_COUNT] PROGMEM = {
+    // harmonic_tree
+    {{ HT_MAJOR_EDGES, (uint8_t)HT_MAJOR_EDGE_COUNT },
+     { HT_MINOR_EDGES, (uint8_t)HT_MINOR_EDGE_COUNT }},
+    // jazz
+    {{ JZ_MAJOR_EDGES, (uint8_t)JZ_MAJOR_EDGE_COUNT },
+     { JZ_MINOR_EDGES, (uint8_t)JZ_MINOR_EDGE_COUNT }},
+};
+
+// --------------- Schemas ---------------
+
+struct ProgSchema {
+    char    name[24];       // schema name
+    uint8_t branches[8];    // branch IDs
+    uint8_t count;          // number of branches
+    uint8_t ctx;            // context: 0=major, 1=minor
+};
+
+// harmonic_tree schemas (10)
+static const ProgSchema HT_SCHEMAS[] PROGMEM = {
+    // Major schemas
+    {"descending",          {0, 7, 14, 21, 0, 0, 0, 0},       5, 0},  // I→V7/IIm→IIm→V7→I
+    {"ascending",           {0, 5, 12, 21, 0, 0, 0, 0},       5, 0},  // I→V7/IV→IV→V7→I
+    {"direct",              {0, 21, 0, 0, 0, 0, 0, 0},        3, 0},  // I→V7→I
+    {"extended_descending", {0, 2, 7, 14, 21, 0, 0, 0},       6, 0},  // I→IIm7(b5)/IIm→V7/IIm→IIm→V7→I
+    {"subdominant_prep",    {0, 1, 5, 12, 21, 0, 0, 0},       6, 0},  // I→IIm/IV→V7/IV→IV→V7→I
+    {"tritone_sub",         {0, 14, 20, 0, 0, 0, 0, 0},       4, 0},  // I→IIm→SUBV7→I
+    {"diminished_passing",  {0, 9, 14, 21, 0, 0, 0, 0},       5, 0},  // I→#Idim→IIm→V7→I
+    {"modal_borrowing",     {0, 14, 15, 21, 0, 0, 0, 0},      5, 0},  // I→IIm→IVm→V7→I
+    // Minor schemas
+    {"minor_descending",    {27, 35, 27, 0, 0, 0, 0, 0},      3, 1},  // Im→V7/I→Im
+    {"minor_subdominant",   {27, 28, 29, 30, 15, 35, 27, 0},  7, 1},  // Im→IIm7(b5)/Ivm→IVm7/IVm→V/IVm→IVm→V7/I→Im
+};
+#define HT_SCHEMA_COUNT (sizeof(HT_SCHEMAS) / sizeof(HT_SCHEMAS[0]))
+
+// jazz schemas (7)
+static const ProgSchema JZ_SCHEMAS[] PROGMEM = {
+    // Major schemas
+    {"ii-V-I",              {14, 21, 0, 0, 0, 0, 0, 0},       3, 0},  // IIm→V7→I
+    {"turnaround",          {0, 6, 14, 21, 0, 0, 0, 0},       4, 0},  // I→VIm→IIm→V7
+    {"backdoor",            {15, 17, 0, 0, 0, 0, 0, 0},       3, 0},  // IVm→bVII→I
+    {"tritone_sub",         {14, 20, 0, 0, 0, 0, 0, 0},       3, 0},  // IIm→SUBV7→I
+    {"extended_turnaround", {38, 6, 14, 21, 0, 0, 0, 0},      4, 0},  // IIIm→VIm→IIm→V7
+    // Minor schemas
+    {"minor_ii-V-i",        {18, 21, 27, 0, 0, 0, 0, 0},      3, 1},  // IIm7(b5)→V7→Im
+    {"minor_backdoor",      {16, 17, 27, 0, 0, 0, 0, 0},      3, 1},  // bVI→bVII→Im
+};
+#define JZ_SCHEMA_COUNT (sizeof(JZ_SCHEMAS) / sizeof(JZ_SCHEMAS[0]))
+
+// Schema table index: [tradition]
+struct ProgSchemaTable {
+    const ProgSchema* schemas;
+    uint8_t           count;
+};
+
+static const ProgSchemaTable PROG_SCHEMA_TABLES[PROG_TRADITION_COUNT] PROGMEM = {
+    { HT_SCHEMAS, (uint8_t)HT_SCHEMA_COUNT },
+    { JZ_SCHEMAS, (uint8_t)JZ_SCHEMA_COUNT },
+};
+
+// --------------- Branch resolution helpers ---------------
+
+// Branch types for resolve():
+// 0 = diatonic (degree from roman numeral)
+// 1 = secondary dominant (V7 / target)
+// 2 = tritone sub (SUBV7)
+// 3 = diminished passing (#Idim, bIIIdim, etc.)
+// 4 = borrowed/modal (IVm, bVI, bVII)
+// 5 = compound (IIm / IV, etc. — resolved via degree)
+
+// Degree mapping for branches that map directly to field degrees
+// 0xFF = requires special handling
+struct BranchDegreeInfo {
+    uint8_t degree;     // 1-7 scale degree (0xFF = special)
+    uint8_t isSeventh;  // 1 = use seventh chord, 0 = triad
+};
+
+// Per-branch degree info (for branches that have a direct degree mapping)
+static const BranchDegreeInfo BRANCH_DEGREE[PROG_BRANCH_COUNT] PROGMEM = {
+    /*  0 I            */ {1, 0},
+    /*  1 IIm / IV     */ {0xFF, 0},  // special
+    /*  2 IIm7(b5)/IIm */ {0xFF, 0},  // special
+    /*  3 IIm7(11)/IV  */ {0xFF, 0},  // special
+    /*  4 SUBV7 / IV   */ {0xFF, 0},  // special
+    /*  5 V7 / IV      */ {0xFF, 0},  // secondary dom
+    /*  6 VIm          */ {6, 0},
+    /*  7 V7 / IIm     */ {0xFF, 0},  // secondary dom
+    /*  8 Idim         */ {0xFF, 0},  // diminished
+    /*  9 #Idim        */ {0xFF, 0},  // diminished
+    /* 10 bIIIdim      */ {0xFF, 0},  // diminished
+    /* 11 IV#dim       */ {0xFF, 0},  // diminished
+    /* 12 IV           */ {4, 0},
+    /* 13 V7 / V       */ {0xFF, 0},  // secondary dom
+    /* 14 IIm          */ {2, 0},
+    /* 15 IVm          */ {0xFF, 0},  // borrowed
+    /* 16 bVI          */ {0xFF, 0},  // borrowed
+    /* 17 bVII         */ {0xFF, 0},  // borrowed
+    /* 18 IIm7(b5)     */ {2, 1},     // ii half-dim (use seventh)
+    /* 19 II#dim       */ {0xFF, 0},  // diminished
+    /* 20 SUBV7        */ {0xFF, 0},  // tritone sub
+    /* 21 V7           */ {5, 1},
+    /* 22 V7 / VI      */ {0xFF, 0},  // secondary dom
+    /* 23 V7 / Im      */ {0xFF, 0},  // secondary dom
+    /* 24 V7 / III     */ {0xFF, 0},  // secondary dom
+    /* 25 V7 / bIII    */ {0xFF, 0},  // secondary dom
+    /* 26 V7 / bVI     */ {0xFF, 0},  // secondary dom
+    /* 27 Im           */ {1, 0},
+    /* 28 IIm7(b5)/Ivm */ {0xFF, 0},  // special
+    /* 29 IVm7 / IVm   */ {0xFF, 0},  // special
+    /* 30 V / IVm       */ {0xFF, 0},  // secondary dom
+    /* 31 V / V         */ {0xFF, 0},  // secondary dom
+    /* 32 bVI / Im      */ {0xFF, 0},  // special
+    /* 33 II / IIm      */ {0xFF, 0},  // secondary dom
+    /* 34 bV / V        */ {0xFF, 0},  // special
+    /* 35 V7 / I        */ {5, 1},     // dominant (same as V7 in minor)
+    /* 36 bIII          */ {0xFF, 0},  // borrowed
+    /* 37 Vm            */ {5, 0},     // v minor
+    /* 38 IIIm          */ {3, 0},
+    /* 39 VIIdim        */ {7, 0},
+    /* 40 #IIdim        */ {0xFF, 0},  // diminished
+};
+
+#endif // GINGODUINO_HAS_TREE
+
+// ===================================================================
 // PROGMEM read helpers
 // ===================================================================
 

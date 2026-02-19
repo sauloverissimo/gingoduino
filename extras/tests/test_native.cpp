@@ -20,6 +20,8 @@
 #include "src/GingoEvent.cpp"
 #include "src/GingoSequence.cpp"
 #include "src/GingoFretboard.cpp"
+#include "src/GingoTree.cpp"
+#include "src/GingoProgression.cpp"
 
 using namespace gingoduino;
 
@@ -791,6 +793,283 @@ void testFretboard() {
 }
 
 // =====================================================================
+// Field deduce
+// =====================================================================
+
+void testFieldDeduce() {
+    printf("\n=== GingoField::deduce ===\n");
+
+    // Deduce from chords — full C major field
+    {
+        const char* items[] = {"CM", "Dm", "Em", "FM", "G7", "Am"};
+        FieldMatch results[10];
+        uint8_t n = GingoField::deduce(items, 6, results, 10);
+        CHECK(n > 0, "deduce chords returns results");
+        // Top result should be C major (6/6 match)
+        CHECK(results[0].matched == 6, "C major chords: matched=6");
+        CHECK(strcmp(results[0].tonicName, "C") == 0, "C major chords: tonic=C");
+        CHECK(results[0].scaleType == SCALE_MAJOR, "C major chords: type=major");
+    }
+
+    // Deduce from partial chords — Am, Dm, Em -> C major (vi, ii, iii)
+    {
+        const char* items[] = {"Am", "Dm", "Em"};
+        FieldMatch results[10];
+        uint8_t n = GingoField::deduce(items, 3, results, 10);
+        CHECK(n > 0, "deduce Am/Dm/Em returns results");
+        // Should find C major with 3 matches
+        bool found = false;
+        for (uint8_t i = 0; i < n; i++) {
+            if (strcmp(results[i].tonicName, "C") == 0 &&
+                results[i].scaleType == SCALE_MAJOR && results[i].matched == 3) {
+                found = true;
+                break;
+            }
+        }
+        CHECK(found, "Am/Dm/Em: C major with 3 matches");
+    }
+
+    // Deduce from notes
+    {
+        const char* items[] = {"C", "E", "G", "A"};
+        FieldMatch results[10];
+        uint8_t n = GingoField::deduce(items, 4, results, 10);
+        CHECK(n > 0, "deduce notes returns results");
+        CHECK(results[0].matched == 4, "C/E/G/A: top match=4");
+        CHECK(strcmp(results[0].tonicName, "C") == 0, "C/E/G/A: tonic=C");
+    }
+
+    // Deduce ordering: higher match count first
+    {
+        const char* items[] = {"CM", "FM"};
+        FieldMatch results[10];
+        uint8_t n = GingoField::deduce(items, 2, results, 10);
+        CHECK(n >= 2, "deduce CM/FM returns multiple results");
+        CHECK(results[0].matched >= results[1].matched,
+              "results sorted by matched desc");
+    }
+
+    // Roles are populated
+    {
+        const char* items[] = {"CM", "G7"};
+        FieldMatch results[5];
+        uint8_t n = GingoField::deduce(items, 2, results, 5);
+        CHECK(n > 0, "deduce CM/G7 returns results");
+        // Find the C major result
+        for (uint8_t i = 0; i < n; i++) {
+            if (strcmp(results[i].tonicName, "C") == 0 &&
+                results[i].scaleType == SCALE_MAJOR) {
+                CHECK(results[i].roleCount == 2, "CM/G7 in C major: 2 roles");
+                CHECK(strcmp(results[i].roles[0], "I") == 0, "CM role = I");
+                CHECK(strcmp(results[i].roles[1], "V7") == 0, "G7 role = V7");
+                break;
+            }
+        }
+    }
+}
+
+// =====================================================================
+// Tree
+// =====================================================================
+
+void testTree() {
+    printf("\n=== GingoTree ===\n");
+
+    // harmonic_tree, C major
+    GingoTree ht("C", SCALE_MAJOR, 0);
+    CHECK(ht.traditionId() == 0, "harmonic_tree id=0");
+    CHECK(ht.context() == 0, "C major context=0 (major)");
+
+    char tradName[20];
+    ht.traditionName(tradName, sizeof(tradName));
+    CHECK(strcmp(tradName, "harmonic_tree") == 0, "tradition name=harmonic_tree");
+
+    // Valid transitions
+    CHECK(ht.isValid("I", "V7") == true, "I→V7 valid in HT major");
+    CHECK(ht.isValid("I", "VIm") == true, "I→VIm valid in HT major");
+    CHECK(ht.isValid("V7", "I") == true, "V7→I valid in HT major");
+    CHECK(ht.isValid("IIm", "V7") == true, "IIm→V7 valid in HT major");
+
+    // Invalid transitions
+    CHECK(ht.isValid("I", "IVm") == false, "I→IVm invalid in HT major");
+    CHECK(ht.isValid("V7", "IIm") == false, "V7→IIm invalid in HT major");
+
+    // Sequence validation
+    {
+        const char* seq[] = {"I", "V7", "I"};
+        CHECK(ht.isValidSequence(seq, 3) == true, "I-V7-I valid sequence");
+    }
+    {
+        const char* seq[] = {"IIm", "V7", "I"};
+        CHECK(ht.isValidSequence(seq, 3) == true, "IIm-V7-I valid sequence");
+    }
+    {
+        const char* seq[] = {"I", "IVm", "I"};
+        CHECK(ht.isValidSequence(seq, 3) == false, "I-IVm-I invalid sequence");
+    }
+
+    // Count valid transitions
+    {
+        const char* seq[] = {"I", "V7", "I"};
+        CHECK(ht.countValidTransitions(seq, 3) == 2, "I-V7-I: 2 valid transitions");
+    }
+
+    // Neighbors
+    {
+        const char* neigh[16];
+        uint8_t n = ht.neighbors("I", neigh, 16);
+        CHECK(n > 0, "I has neighbors in HT major");
+        // Check that V7 is among them
+        bool hasV7 = false;
+        for (uint8_t i = 0; i < n; i++) {
+            char buf[24];
+            data::readPgmStr(buf, neigh[i], sizeof(buf));
+            if (strcmp(buf, "V7") == 0) hasV7 = true;
+        }
+        CHECK(hasV7, "V7 is a neighbor of I");
+    }
+
+    // Resolve branch to chord
+    {
+        char chord[16];
+        CHECK(ht.resolve("I", chord, sizeof(chord)) == true, "resolve I");
+        CHECK(strcmp(chord, "CM") == 0, "I in C major = CM");
+
+        CHECK(ht.resolve("V7", chord, sizeof(chord)) == true, "resolve V7");
+        CHECK(strcmp(chord, "G7") == 0, "V7 in C major = G7");
+
+        CHECK(ht.resolve("IIm", chord, sizeof(chord)) == true, "resolve IIm");
+        CHECK(strcmp(chord, "Dm") == 0, "IIm in C major = Dm");
+
+        CHECK(ht.resolve("VIm", chord, sizeof(chord)) == true, "resolve VIm");
+        CHECK(strcmp(chord, "Am") == 0, "VIm in C major = Am");
+
+        CHECK(ht.resolve("IV", chord, sizeof(chord)) == true, "resolve IV");
+        CHECK(strcmp(chord, "FM") == 0, "IV in C major = FM");
+    }
+
+    // Resolve secondary dominant
+    {
+        char chord[16];
+        CHECK(ht.resolve("V7 / IIm", chord, sizeof(chord)) == true, "resolve V7/IIm");
+        CHECK(strcmp(chord, "A7") == 0, "V7/IIm in C = A7");
+    }
+
+    // Resolve diminished
+    {
+        char chord[16];
+        CHECK(ht.resolve("#Idim", chord, sizeof(chord)) == true, "resolve #Idim");
+        CHECK(strcmp(chord, "C#dim") == 0, "#Idim in C = C#dim");
+    }
+
+    // Jazz tree
+    GingoTree jz("C", SCALE_MAJOR, 1);
+    CHECK(jz.traditionId() == 1, "jazz id=1");
+    CHECK(jz.isValid("IIm", "V7") == true, "IIm→V7 valid in jazz");
+    CHECK(jz.isValid("V7", "I") == true, "V7→I valid in jazz");
+    CHECK(jz.isValid("IVm", "bVII") == true, "IVm→bVII valid in jazz (backdoor)");
+    CHECK(jz.isValid("bVII", "I") == true, "bVII→I valid in jazz (backdoor)");
+
+    // Minor context
+    GingoTree htMin("A", SCALE_NATURAL_MINOR, 0);
+    CHECK(htMin.context() == 1, "A minor context=1 (minor)");
+    CHECK(htMin.isValid("Im", "V7 / I") == true, "Im→V7/I valid in HT minor");
+    CHECK(htMin.isValid("V7 / I", "Im") == true, "V7/I→Im valid in HT minor");
+}
+
+// =====================================================================
+// Progression
+// =====================================================================
+
+void testProgression() {
+    printf("\n=== GingoProgression ===\n");
+
+    GingoProgression p("C", SCALE_MAJOR);
+
+    // identify: ii-V-I → jazz
+    {
+        const char* seq[] = {"IIm", "V7", "I"};
+        ProgressionMatch m;
+        bool found = p.identify(seq, 3, &m);
+        CHECK(found, "identify IIm-V7-I found");
+        CHECK(strcmp(m.schema, "ii-V-I") == 0, "identify IIm-V7-I → ii-V-I schema");
+        CHECK(m.scoreNum == 100, "ii-V-I exact match score=100");
+    }
+
+    // identify: I-V7-I → direct (harmonic_tree)
+    {
+        const char* seq[] = {"I", "V7", "I"};
+        ProgressionMatch m;
+        bool found = p.identify(seq, 3, &m);
+        CHECK(found, "identify I-V7-I found");
+        CHECK(strcmp(m.schema, "direct") == 0, "identify I-V7-I → direct schema");
+    }
+
+    // deduce: returns multiple results
+    {
+        const char* seq[] = {"I", "V7", "I"};
+        ProgressionMatch results[10];
+        uint8_t n = p.deduce(seq, 3, results, 10);
+        CHECK(n > 0, "deduce I-V7-I returns results");
+        // Top result should have high score
+        CHECK(results[0].scoreNum >= 50, "deduce top score >= 50");
+    }
+
+    // deduce: IIm-V7 (prefix of ii-V-I)
+    {
+        const char* seq[] = {"IIm", "V7"};
+        ProgressionMatch results[10];
+        uint8_t n = p.deduce(seq, 2, results, 10);
+        CHECK(n > 0, "deduce IIm-V7 returns results");
+        // Should match as prefix of ii-V-I
+        bool foundIiVI = false;
+        for (uint8_t i = 0; i < n; i++) {
+            if (strcmp(results[i].schema, "ii-V-I") == 0) {
+                foundIiVI = true;
+                break;
+            }
+        }
+        CHECK(foundIiVI, "IIm-V7 matches as prefix of ii-V-I");
+    }
+
+    // predict: after IIm-V7, should suggest I with high confidence
+    {
+        const char* seq[] = {"IIm", "V7"};
+        ProgressionRoute routes[16];
+        uint8_t n = p.predict(seq, 2, routes, 16);
+        CHECK(n > 0, "predict after IIm-V7 returns routes");
+        // "I" should be among predictions
+        bool foundI = false;
+        for (uint8_t i = 0; i < n; i++) {
+            if (strcmp(routes[i].next, "I") == 0) {
+                foundI = true;
+                CHECK(routes[i].confidenceNum > 30, "I prediction confidence > baseline");
+                break;
+            }
+        }
+        CHECK(foundI, "I predicted after IIm-V7");
+    }
+
+    // predict: after I, multiple options
+    {
+        const char* seq[] = {"I"};
+        ProgressionRoute routes[32];
+        uint8_t n = p.predict(seq, 1, routes, 32);
+        CHECK(n >= 2, "predict after I returns multiple options");
+    }
+
+    // Minor progression
+    {
+        GingoProgression pm("A", SCALE_NATURAL_MINOR);
+        const char* seq[] = {"Im", "V7 / I", "Im"};
+        ProgressionMatch m;
+        bool found = pm.identify(seq, 3, &m);
+        CHECK(found, "identify Im-V7/I-Im found in minor");
+        CHECK(strcmp(m.schema, "minor_descending") == 0, "minor_descending schema");
+    }
+}
+
+// =====================================================================
 // Main
 // =====================================================================
 
@@ -815,6 +1094,9 @@ int main() {
     testSequence();
     testMIDI();
     testFretboard();
+    testFieldDeduce();
+    testTree();
+    testProgression();
 
     printf("\n======================\n");
     printf("Tests: %d  Passed: %d  Failed: %d\n", tests, tests - failures, failures);
