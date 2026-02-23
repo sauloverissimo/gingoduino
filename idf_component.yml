@@ -1,0 +1,11 @@
+version: "0.2.2"
+description: "Music theory library for embedded systems"
+url: "https://github.com/sauloverissimo/gingoduino"
+repository: "https://github.com/sauloverissimo/gingoduino.git"
+targets:
+  - esp32
+  - esp32s2
+  - esp32s3
+  - esp32c3
+  - esp32h2
+dependencies: {}
