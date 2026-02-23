@@ -6,6 +6,13 @@
 
 **Music Theory Engine for Embedded Systems** | **Biblioteca de Teoria Musical para Sistemas Embarcados**
 
+<p align="center">
+  <a href="https://www.arduino.cc/reference/en/libraries/gingoduino/"><img src="https://img.shields.io/badge/Arduino-compatible-00878F?logo=arduino&logoColor=white" alt="Arduino"></a>
+  <a href="https://registry.platformio.org/libraries/sauloverissimo/Gingoduino"><img src="https://img.shields.io/badge/PlatformIO-compatible-FF7F00?logo=platformio&logoColor=white" alt="PlatformIO"></a>
+  <a href="https://github.com/sauloverissimo/gingoduino"><img src="https://img.shields.io/badge/ESP--IDF-compatible-E7352C?logo=espressif&logoColor=white" alt="ESP-IDF"></a>
+  <a href="https://github.com/sauloverissimo/gingoduino/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+</p>
+
 ---
 
 ## English
@@ -22,7 +29,7 @@ Built as a port of the [gingo C++17 library](https://github.com/sauloverissimo/g
 |------|---------|-----------|
 | 1 | Note, Interval, Chord | AVR (Uno, Nano) |
 | 2 | + Scale, Field, Duration, Tempo, TimeSig, Fretboard | ESP8266 |
-| 3 | + Event, Sequence | ESP32, RP2040, Teensy, Daisy Seed |
+| 3 | + Event, Sequence, Tree, Progression | ESP32, RP2040, Teensy, Daisy Seed |
 
 Tiers auto-select based on platform, or override with `#define GINGODUINO_TIER N`.
 
@@ -31,16 +38,30 @@ Tiers auto-select based on platform, or override with `#define GINGODUINO_TIER N
 - 12-note chromatic system with enharmonic equivalents
 - 42 chord formulas with reverse lookup (identify)
 - 40+ scale types and modes with signature, brightness, relative/parallel
-- Harmonic field analysis with T/S/D functions and roles
+- Harmonic field analysis with T/S/D functions and roles (+ deduce from notes/chords)
+- Harmonic tree (directed graph, major/minor, classical + jazz traditions)
+- Progression analysis: identify, deduce (ranked), predict (next branch)
 - Fretboard engine: violao, cavaquinho, bandolim, ukulele with fingering scoring
 - Musical events (note, chord, rest) and sequences with tempo/time signature
 - Fixed-size arrays, no dynamic allocation, PROGMEM support
-- 177 native tests passing
+- Compatible with Arduino IDE, PlatformIO, and ESP-IDF
+- 275 native tests passing
 
 ### Installation
 
 **Arduino IDE Library Manager:**
 - Sketch > Include Library > Manage Libraries > Search `Gingoduino` > Install
+
+**PlatformIO:**
+```ini
+; platformio.ini
+lib_deps = sauloverissimo/Gingoduino
+```
+
+**ESP-IDF Component:**
+```bash
+idf.py add-dependency "sauloverissimo/gingoduino"
+```
 
 **Manual:**
 - Download and copy to your Arduino libraries folder (`~/Arduino/libraries/`)
@@ -310,7 +331,7 @@ g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra \
     && ./extras/tests/test_native
 ```
 
-208 tests, 0 failures. No Arduino framework needed.
+275 tests, 0 failures. No Arduino framework needed.
 
 ### License
 
@@ -338,7 +359,7 @@ Port da [biblioteca gingo C++17](https://github.com/sauloverissimo/gingo). Arqui
 |------|---------|-------------|
 | 1 | Note, Interval, Chord | AVR (Uno, Nano) |
 | 2 | + Scale, Field, Duration, Tempo, TimeSig, Fretboard | ESP8266 |
-| 3 | + Event, Sequence | ESP32, RP2040, Teensy, Daisy Seed |
+| 3 | + Event, Sequence, Tree, Progression | ESP32, RP2040, Teensy, Daisy Seed |
 
 Tiers auto-detectados por plataforma, ou force com `#define GINGODUINO_TIER N`.
 
@@ -347,16 +368,30 @@ Tiers auto-detectados por plataforma, ou force com `#define GINGODUINO_TIER N`.
 - Sistema cromatico de 12 notas com enarmonicos
 - 42 formulas de acordes com lookup reverso (identify)
 - 40+ tipos de escalas e modos com armadura, brilho, relativa/paralela
-- Analise de campo harmonico com funcoes T/S/D e roles
+- Analise de campo harmonico com funcoes T/S/D e roles (+ deduce a partir de notas/acordes)
+- Arvore harmonica (grafo dirigido, major/minor, tradicoes classica + jazz)
+- Analise de progressao: identify, deduce (ranked), predict (proximo branch)
 - Engine de braco: violao, cavaquinho, bandolim, ukulele com scoring de digitacao
 - Eventos musicais (nota, acorde, pausa) e sequencias com tempo/compasso
 - Arrays de tamanho fixo, sem alocacao dinamica, suporte PROGMEM
-- 208 testes nativos passando
+- Compativel com Arduino IDE, PlatformIO e ESP-IDF
+- 275 testes nativos passando
 
 ### Instalacao
 
 **Arduino IDE Library Manager:**
 - Sketch > Include Library > Manage Libraries > Buscar `Gingoduino` > Install
+
+**PlatformIO:**
+```ini
+; platformio.ini
+lib_deps = sauloverissimo/Gingoduino
+```
+
+**ESP-IDF Component:**
+```bash
+idf.py add-dependency "sauloverissimo/gingoduino"
+```
 
 **Manual:**
 - Baixe e copie para sua pasta de bibliotecas Arduino (`~/Arduino/libraries/`)
@@ -492,7 +527,7 @@ g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra \
     && ./extras/tests/test_native
 ```
 
-208 testes, 0 falhas. Sem framework Arduino.
+275 testes, 0 falhas. Sem framework Arduino.
 
 ### Licenca
 

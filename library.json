@@ -1,0 +1,41 @@
+{
+  "name": "Gingoduino",
+  "version": "0.2.2",
+  "description": "Music theory library for embedded systems. Notes, intervals, chords, scales, harmonic fields, durations, tempo, time signatures, fretboard engine, events, sequences, harmonic trees, and progression analysis. Zero-heap C++11, PROGMEM tables, tier-based compilation.",
+  "keywords": [
+    "music",
+    "theory",
+    "chord",
+    "scale",
+    "interval",
+    "harmony",
+    "MIDI",
+    "fretboard",
+    "embedded"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sauloverissimo/gingoduino.git"
+  },
+  "authors": [
+    {
+      "name": "Saulo Verissimo",
+      "email": "sauloverissimo@gmail.com",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/sauloverissimo/gingoduino",
+  "frameworks": ["arduino", "espidf"],
+  "platforms": [
+    "atmelavr",
+    "espressif8266",
+    "espressif32",
+    "raspberrypi",
+    "teensy"
+  ],
+  "headers": "Gingoduino.h",
+  "build": {
+    "srcDir": "src"
+  }
+}
