@@ -1,6 +1,6 @@
 {
   "name": "Gingoduino",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Music theory library for embedded systems. Notes, intervals, chords, scales, harmonic fields, durations, tempo, time signatures, fretboard engine, events, sequences, harmonic trees, and progression analysis. Zero-heap C++11, PROGMEM tables, tier-based compilation.",
   "keywords": [
     "music",
