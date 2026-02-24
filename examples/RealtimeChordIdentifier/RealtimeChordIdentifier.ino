@@ -1,7 +1,7 @@
 // Gingoduino v0.2.0 — Real-Time Chord Identifier
 //
 // This example identifies chords in real-time from MIDI input.
-// It groups notes by blockIndex (simultaneous note presses) and
+// It groups notes by chordIndex (simultaneous note presses) and
 // uses GingoChord::identify() to recognize the chord.
 //
 // Hardware: ESP32-S3 with ESP32_Host_MIDI
@@ -12,7 +12,7 @@
 //
 // How it works:
 //   1. MIDI notes are received via USB keyboard or BLE
-//   2. Notes pressed simultaneously have the same blockIndex
+//   2. Notes pressed simultaneously have the same chordIndex
 //   3. When a note in a block is released, the chord is identified
 //   4. Result is displayed on Serial and optionally on display
 //
@@ -55,9 +55,9 @@ void loop() {
         const MIDIEventData& lastEvent = queue.back();
 
         // Detect chord completion: NoteOff in a block closes the chord
-        if (lastEvent.mensagem == "NoteOff") {
+        if (lastEvent.status == "NoteOff") {
             // Get all notes in the last closed block
-            int blockToAnalyze = lastEvent.blockIndex;
+            int blockToAnalyze = lastEvent.chordIndex;
             identifyChordInBlock(queue, blockToAnalyze);
         }
     }
@@ -66,7 +66,7 @@ void loop() {
     delay(50);
 }
 
-void identifyChordInBlock(const std::deque<MIDIEventData>& queue, int blockIndex) {
+void identifyChordInBlock(const std::deque<MIDIEventData>& queue, int chordIdx) {
     // Collect all unique notes in this block
     GingoNote chordNotes[MAX_CHORD_NOTES];
     uint8_t noteCount = 0;
@@ -75,9 +75,9 @@ void identifyChordInBlock(const std::deque<MIDIEventData>& queue, int blockIndex
 
     // Iterate backward through queue to find all notes in this block
     for (auto it = queue.rbegin(); it != queue.rend() && noteCount < MAX_CHORD_NOTES; ++it) {
-        if (it->blockIndex == blockIndex && (it->mensagem == "NoteOn" || it->mensagem == "NoteOff")) {
+        if (it->chordIndex == chordIdx && (it->status == "NoteOn" || it->status == "NoteOff")) {
             // Convert MIDI number to GingoNote
-            GingoNote note = GingoNote::fromMIDI((uint8_t)it->nota);
+            GingoNote note = GingoNote::fromMIDI((uint8_t)it->note);
 
             // Check if we already have this note (avoid duplicates)
             bool hasDuplicate = false;
@@ -107,8 +107,8 @@ void identifyChordInBlock(const std::deque<MIDIEventData>& queue, int blockIndex
         identified[0] = '\0';
 
         if (GingoChord::identify(chordNotes, noteCount, identified, sizeof(identified))) {
-            Serial.print("Block ");
-            Serial.print(blockIndex);
+            Serial.print("Chord ");
+            Serial.print(chordIdx);
             Serial.print(": ");
             Serial.print(noteCount);
             Serial.print(" notes → ");
@@ -124,8 +124,8 @@ void identifyChordInBlock(const std::deque<MIDIEventData>& queue, int blockIndex
         }
     } else if (noteCount == 1) {
         // Single note
-        Serial.print("Block ");
-        Serial.print(blockIndex);
+        Serial.print("Chord ");
+        Serial.print(chordIdx);
         Serial.print(": Single note = ");
         Serial.println(chordNotes[0].name());
     }

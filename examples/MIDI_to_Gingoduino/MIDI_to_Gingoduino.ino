@@ -68,17 +68,17 @@ void loop() {
 }
 
 void onMIDIEvent(const MIDIEventData& event) {
-    if (event.mensagem != "NoteOn" && event.mensagem != "NoteOff") {
+    if (event.status != "NoteOn" && event.status != "NoteOff") {
         // Ignore CC, PitchBend, etc.
         return;
     }
 
     Serial.print("[");
-    Serial.print(event.mensagem.c_str());
+    Serial.print(event.status.c_str());
     Serial.print("] ");
 
     // Get MIDI note number
-    uint8_t midiNum = (uint8_t)event.nota;
+    uint8_t midiNum = (uint8_t)event.note;
 
     // Convert to Gingoduino
     GingoNote note = GingoNote::fromMIDI(midiNum);
@@ -88,7 +88,7 @@ void onMIDIEvent(const MIDIEventData& event) {
     displayNoteInfo(note, octave, midiNum);
 
     Serial.print(" | Velocity: ");
-    Serial.print(event.velocidade);
+    Serial.print(event.velocity);
     Serial.println();
 }
 
@@ -113,7 +113,7 @@ void displayNoteInfo(const GingoNote& note, int8_t octave, uint8_t midiNum) {
 }
 
 // Notes for the future:
-// 1. To identify chords, collect NoteOn events with the same blockIndex,
+// 1. To identify chords, collect NoteOn events with the same chordIndex,
 //    then use GingoChord::identify(notes, noteCount) to find the chord.
 //
 // 2. Example:
