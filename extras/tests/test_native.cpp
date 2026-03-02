@@ -1273,9 +1273,9 @@ void testMonitor() {
     // Test basic note tracking via polling
     {
         GingoMonitor mon;
-        mon.noteOn(60, 100);  // C4
-        mon.noteOn(64, 100);  // E4
-        mon.noteOn(67, 100);  // G4
+        mon.noteOn(1, 60, 100);  // C4
+        mon.noteOn(1, 64, 100);  // E4
+        mon.noteOn(1, 67, 100);  // G4
         // Should detect CM chord
         CHECK(mon.hasChord(), "3 notes → chord detected");
         CHECK(strcmp(mon.currentChord().name(), "CM") == 0, "C+E+G = CM");
@@ -1284,11 +1284,11 @@ void testMonitor() {
     // Note off removes note, chord may change
     {
         GingoMonitor mon;
-        mon.noteOn(60, 100);  // C
-        mon.noteOn(64, 100);  // E
-        mon.noteOn(67, 100);  // G
+        mon.noteOn(1, 60, 100);  // C
+        mon.noteOn(1, 64, 100);  // E
+        mon.noteOn(1, 67, 100);  // G
         CHECK(mon.hasChord(), "CM detected before noteOff");
-        mon.noteOff(67);  // remove G
+        mon.noteOff(1, 67);  // remove G
         // C+E alone — not enough for a chord
         CHECK(!mon.hasChord(), "C+E alone not a chord");
     }
@@ -1296,11 +1296,11 @@ void testMonitor() {
     // Sustain pedal keeps notes
     {
         GingoMonitor mon;
-        mon.noteOn(60, 100);  // C
-        mon.noteOn(64, 100);  // E
-        mon.noteOn(67, 100);  // G
+        mon.noteOn(1, 60, 100);  // C
+        mon.noteOn(1, 64, 100);  // E
+        mon.noteOn(1, 67, 100);  // G
         mon.sustainOn();
-        mon.noteOff(67);  // G sustained
+        mon.noteOff(1, 67);  // G sustained
         // Chord should still be detected (G is sustained)
         CHECK(mon.hasChord(), "sustain keeps chord");
         CHECK(strcmp(mon.currentChord().name(), "CM") == 0, "sustained chord still CM");
@@ -1311,12 +1311,60 @@ void testMonitor() {
     // Reset clears everything
     {
         GingoMonitor mon;
-        mon.noteOn(60, 100);
-        mon.noteOn(64, 100);
-        mon.noteOn(67, 100);
+        mon.noteOn(1, 60, 100);
+        mon.noteOn(1, 64, 100);
+        mon.noteOn(1, 67, 100);
         CHECK(mon.hasChord(), "chord before reset");
         mon.reset();
         CHECK(!mon.hasChord(), "reset clears chord");
+    }
+
+    // Channel filter — setChannel / channel()
+    {
+        GingoMonitor mon;
+        mon.setChannel(2);
+        CHECK(mon.channel() == 2, "setChannel(2) stored");
+
+        // Events on channel 2 must pass
+        mon.noteOn(2, 60, 100);
+        mon.noteOn(2, 64, 100);
+        mon.noteOn(2, 67, 100);
+        CHECK(mon.hasChord(), "channel 2 events accepted");
+
+        // Events on channel 1 must be silently ignored
+        mon.reset();
+        mon.noteOn(1, 60, 100);
+        mon.noteOn(1, 64, 100);
+        mon.noteOn(1, 67, 100);
+        CHECK(!mon.hasChord(), "channel 1 events rejected by filter");
+    }
+
+    // Channel filter 0 = accept all
+    {
+        GingoMonitor mon;
+        mon.setChannel(0);
+        mon.noteOn(3, 60, 100);
+        mon.noteOn(5, 64, 100);
+        mon.noteOn(9, 67, 100);
+        CHECK(mon.hasChord(), "channel filter 0 accepts all channels");
+    }
+
+    // noteOff filtered too
+    {
+        GingoMonitor mon;
+        mon.setChannel(1);
+        mon.noteOn(1, 60, 100);
+        mon.noteOn(1, 64, 100);
+        mon.noteOn(1, 67, 100);
+        CHECK(mon.hasChord(), "noteOff filter test: CM detected ch1");
+
+        // noteOff on wrong channel must not remove note
+        mon.noteOff(2, 67);
+        CHECK(mon.hasChord(), "noteOff on ch2 ignored, chord remains");
+
+        // noteOff on correct channel removes note
+        mon.noteOff(1, 67);
+        CHECK(!mon.hasChord(), "noteOff on ch1 removes note, chord gone");
     }
 
 #if GINGODUINO_TIER >= 3
@@ -1328,8 +1376,8 @@ void testMonitor() {
             (void)ctx;
             noteCount++;
         });
-        mon.noteOn(60, 100);
-        mon.noteOn(64, 100);
+        mon.noteOn(1, 60, 100);
+        mon.noteOn(1, 64, 100);
         CHECK(noteCount == 2, "onNoteOn lambda called 2 times");
 
         bool chordFired = false;
@@ -1337,7 +1385,7 @@ void testMonitor() {
             (void)c;
             chordFired = true;
         });
-        mon.noteOn(67, 100);  // completes CM
+        mon.noteOn(1, 67, 100);  // completes CM
         CHECK(chordFired, "onChordDetected lambda fired");
     }
 #endif

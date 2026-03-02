@@ -54,7 +54,8 @@ namespace gingoduino {
 /// Stateless MIDI 1.0 dispatcher.
 ///
 /// Accepts pre-parsed (status, data1, data2) tuples and routes them to a
-/// GingoMonitor. All channels are accepted (channel nibble is ignored).
+/// GingoMonitor. The channel nibble is extracted and forwarded — the monitor
+/// applies its own channel filter (see GingoMonitor::setChannel).
 ///
 /// Handled messages:
 ///   • 0x9n Note On  — vel > 0 → noteOn, vel == 0 → noteOff (running-status trick)
@@ -73,16 +74,17 @@ public:
     static bool dispatch(uint8_t status, uint8_t data1, uint8_t data2,
                          GingoMonitor& mon) {
         uint8_t type = status & 0xF0;
+        uint8_t ch   = (status & 0x0F) + 1;  // MIDI channel 1–16
 
         // Note On — vel=0 treated as Note Off (running-status convention)
         if (type == 0x90) {
-            if (data2 > 0) { mon.noteOn(data1, data2); return true; }
-            mon.noteOff(data1); return true;
+            if (data2 > 0) { mon.noteOn(ch, data1, data2); return true; }
+            mon.noteOff(ch, data1); return true;
         }
 
         // Note Off
         if (type == 0x80) {
-            mon.noteOff(data1); return true;
+            mon.noteOff(ch, data1); return true;
         }
 
         // Control Change

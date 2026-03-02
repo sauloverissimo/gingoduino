@@ -233,11 +233,12 @@ public:
         // Word 0: [MT][Group][Status byte][Data1][Data2]
         if (mt == 0x2) {
             uint8_t opcode = (uint8_t)((words[0] >> 20) & 0xF);
+            uint8_t ch     = (uint8_t)((words[0] >> 16) & 0xF) + 1;  // channel 1–16
             uint8_t data1  = (uint8_t)((words[0] >>  8) & 0x7F);
             uint8_t data2  = (uint8_t)(words[0] & 0x7F);
 
-            if (opcode == 0x9 && data2 > 0) { mon.noteOn(data1, data2);  return true; }
-            if (opcode == 0x8 || (opcode == 0x9 && data2 == 0)) { mon.noteOff(data1); return true; }
+            if (opcode == 0x9 && data2 > 0) { mon.noteOn(ch, data1, data2);  return true; }
+            if (opcode == 0x8 || (opcode == 0x9 && data2 == 0)) { mon.noteOff(ch, data1); return true; }
             // CC (opcode 0xB): data1=CC number, data2=value
             if (opcode == 0xB) {
                 if (data1 == 64) { (data2 >= 64) ? mon.sustainOn() : mon.sustainOff(); return true; }
@@ -251,14 +252,15 @@ public:
         // Word 1: [Value 32-bit]
         if (mt == 0x4) {
             uint8_t opcode = (uint8_t)((words[0] >> 20) & 0xF);
+            uint8_t ch     = (uint8_t)((words[0] >> 16) & 0xF) + 1;  // channel 1–16
             uint8_t index  = (uint8_t)((words[0] >>  8) & 0x7F);
 
             // Note On/Off
             if (opcode == 0x9 || opcode == 0x8) {
                 uint16_t vel16 = (uint16_t)((words[1] >> 16) & 0xFFFF);
                 uint8_t  vel7  = (uint8_t)(vel16 >> 9);
-                if (opcode == 0x9 && vel16 > 0) { mon.noteOn(index, vel7);  return true; }
-                mon.noteOff(index); return true;
+                if (opcode == 0x9 && vel16 > 0) { mon.noteOn(ch, index, vel7);  return true; }
+                mon.noteOff(ch, index); return true;
             }
             // CC (opcode 0xB): index=CC number, word1=32-bit value
             if (opcode == 0xB) {

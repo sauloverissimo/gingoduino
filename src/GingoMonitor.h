@@ -88,6 +88,17 @@ public:
     GingoMonitor();
 
     // ------------------------------------------------------------------
+    // Channel filter
+    // ------------------------------------------------------------------
+
+    /// Set the MIDI channel filter (1–16). Pass 0 to accept all channels (default).
+    /// A Monitor with setChannel(1) only processes events from MIDI channel 1.
+    void setChannel(uint8_t ch) { channelFilter_ = ch; }
+
+    /// Currently configured channel filter. 0 = all channels accepted.
+    uint8_t channel() const { return channelFilter_; }
+
+    // ------------------------------------------------------------------
     // Callback registration — function pointer style (all tiers)
     // ------------------------------------------------------------------
 
@@ -123,15 +134,17 @@ public:
     // ------------------------------------------------------------------
 
     /// Process a MIDI Note On event.
-    /// Adds the note, updates chord/field state, fires callbacks.
+    /// Silently ignored if the monitor has a channel filter and channel != filter.
+    /// @param channel   MIDI channel (1–16).
     /// @param midiNum   MIDI note number (0–127).
     /// @param velocity  MIDI velocity (1–127; ignored for state but stored).
-    void noteOn(uint8_t midiNum, uint8_t velocity = 100);
+    void noteOn(uint8_t channel, uint8_t midiNum, uint8_t velocity = 100);
 
     /// Process a MIDI Note Off event.
-    /// Removes the note and re-evaluates state.
+    /// Silently ignored if the monitor has a channel filter and channel != filter.
+    /// @param channel  MIDI channel (1–16).
     /// @param midiNum  MIDI note number (0–127).
-    void noteOff(uint8_t midiNum);
+    void noteOff(uint8_t channel, uint8_t midiNum);
 
     /// Reset all held notes and clear chord/field state.
     void reset();
@@ -172,6 +185,9 @@ public:
     const GingoField& currentField() const { return field_; }
 
 private:
+    // Channel filter (0 = all channels, 1–16 = specific channel)
+    uint8_t channelFilter_;
+
     // Held MIDI note numbers (max 16 simultaneous — practical theory limit)
     static const uint8_t MAX_HELD = 16;
     uint8_t held_[MAX_HELD];
