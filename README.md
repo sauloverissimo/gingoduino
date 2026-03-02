@@ -11,6 +11,7 @@
   <a href="https://www.arduino.cc/reference/en/libraries/gingoduino/"><img src="https://img.shields.io/badge/Arduino-compatible-00878F?logo=arduino&logoColor=white" alt="Arduino"></a>
   <a href="https://registry.platformio.org/libraries/sauloverissimo/Gingoduino"><img src="https://img.shields.io/badge/PlatformIO-compatible-FF7F00?logo=platformio&logoColor=white" alt="PlatformIO"></a>
   <a href="https://github.com/sauloverissimo/gingoduino"><img src="https://img.shields.io/badge/ESP--IDF-compatible-E7352C?logo=espressif&logoColor=white" alt="ESP-IDF"></a>
+  <a href="https://github.com/sauloverissimo/gingoduino/blob/main/src/GingoMIDI2.h"><img src="https://img.shields.io/badge/MIDI_2.0-UMP_Flex_Data-8A2BE2" alt="MIDI 2.0"></a>
   <a href="https://github.com/sauloverissimo/gingoduino/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
 </p>
 
@@ -29,8 +30,8 @@ Built as a port of the [gingo C++17 library](https://github.com/sauloverissimo/g
 | Tier | Modules | Platforms |
 |------|---------|-----------|
 | 1 | Note, Interval, Chord | AVR (Uno, Nano) |
-| 2 | + Scale, Field, Duration, Tempo, TimeSig, Fretboard | ESP8266 |
-| 3 | + Event, Sequence, Tree, Progression | ESP32, RP2040, Teensy, Daisy Seed |
+| 2 | + Scale, Field, Duration, Tempo, TimeSig, Fretboard, NoteContext, Monitor, MIDI1 | ESP8266 |
+| 3 | + Event, Sequence, Tree, Progression, ChordComparison, MIDI2 | ESP32, RP2040, Teensy, Daisy Seed |
 
 Tiers auto-select based on platform, or override with `#define GINGODUINO_TIER N`.
 
@@ -44,9 +45,14 @@ Tiers auto-select based on platform, or override with `#define GINGODUINO_TIER N
 - Progression analysis: identify, deduce (ranked), predict (next branch)
 - Fretboard engine: violao, cavaquinho, bandolim, ukulele with fingering scoring
 - Musical events (note, chord, rest) and sequences with tempo/time signature
+- Real-time harmonic monitor with chord/field detection and per-note context
+- MIDI 1.0 parser (running status, SysEx) and stateless dispatcher
+- MIDI 2.0 UMP Flex Data generation (chord name, key signature, per-note controller)
+- MIDI-CI support (discovery, profile inquiry, capabilities)
+- Chord comparison: 17 dimensions including Neo-Riemannian transforms and Forte vectors
 - Fixed-size arrays, no dynamic allocation, PROGMEM support
 - Compatible with Arduino IDE, PlatformIO, and ESP-IDF
-- 275 native tests passing
+- 384 native tests passing
 
 ### Installation
 
@@ -233,6 +239,104 @@ seq.barCount();     // 0.5
 seq.transpose(5);   // transpose all events
 ```
 
+#### GingoMonitor (Tier 2+)
+```cpp
+GingoMonitor monitor;
+
+// Feed MIDI events
+monitor.noteOn(60, 100);   // C4, velocity 100
+monitor.noteOn(64, 100);   // E4
+monitor.noteOn(67, 100);   // G4
+
+// Poll state
+monitor.hasChord();         // true
+monitor.currentChord();     // GingoChord("CM")
+monitor.hasField();         // true (deduced from held notes)
+monitor.currentField();     // GingoField
+monitor.activeNoteCount();  // 3
+
+// Sustain pedal
+monitor.sustainOn();
+monitor.sustainOff();
+monitor.reset();
+
+// Callbacks — function pointer (all tiers)
+void onChord(const GingoChord& c, void* ctx) { /* ... */ }
+monitor.onChordDetected(onChord, nullptr);
+
+// Callbacks — std::function lambda (Tier 3 only)
+monitor.onChordDetected([](const GingoChord& c) { /* ... */ });
+monitor.onFieldChanged([](const GingoField& f) { /* ... */ });
+monitor.onNoteOn([](const GingoNoteContext& ctx) {
+    ctx.note;      // GingoNote
+    ctx.degree;    // scale degree (1-7, 0 if chromatic)
+    ctx.inScale;   // bool
+    ctx.function;  // FUNC_TONIC / FUNC_SUBDOMINANT / FUNC_DOMINANT
+    ctx.interval;  // GingoInterval from tonic
+});
+```
+
+#### GingoMIDI1 — MIDI 1.0 Parser (Tier 2+)
+```cpp
+GingoMonitor monitor;
+
+// Stateless dispatch (pre-parsed messages)
+GingoMIDI1::dispatch(0x90, 60, 100, monitor);  // Note On C4
+GingoMIDI1::dispatch(0x80, 60, 0, monitor);    // Note Off C4
+GingoMIDI1::dispatch(0xB0, 64, 127, monitor);  // Sustain On
+GingoMIDI1::dispatch(0xB0, 123, 0, monitor);   // All Notes Off
+
+// Stateful byte stream parser (handles running status, SysEx, real-time)
+GingoMIDI1Parser parser;
+while (Serial1.available()) {
+    parser.feed((uint8_t)Serial1.read(), monitor);
+}
+```
+
+#### GingoMIDI2 — MIDI 2.0 UMP (Tier 3)
+```cpp
+// Generate UMP Flex Data packets
+GingoUMP ump = GingoMIDI2::chordName(GingoChord("CM"));
+GingoUMP ump = GingoMIDI2::keySignature(scale);
+GingoUMP ump = GingoMIDI2::keySignature(scale, group, channel);
+GingoUMP ump = GingoMIDI2::perNoteController(noteCtx, group, channel);
+
+ump.wordCount;   // 4 (128-bit Flex Data) or 2 (64-bit)
+ump.words[0..3]; // raw UMP words
+ump.byteCount(); // total bytes
+
+uint8_t buf[16];
+ump.toBytesBE(buf); // serialize big-endian
+
+// Dispatch incoming UMP messages to monitor
+GingoMIDI2::dispatch(word0, word1, monitor);  // MT=0x2 (MIDI1) or MT=0x4 (MIDI2)
+
+// MIDI-CI
+uint8_t sysex[32];
+uint8_t len = GingoMIDICI::discoveryRequest(sysex, sizeof(sysex));
+len = GingoMIDICI::profileInquiryReply(sysex, sizeof(sysex));
+char json[255];
+uint8_t jlen = GingoMIDICI::capabilitiesJSON(json, sizeof(json));
+```
+
+#### GingoChordComparison (Tier 3)
+```cpp
+GingoChordComparison cmp(GingoChord("CM"), GingoChord("Am"));
+cmp.common_count;     // 2 (C and E shared)
+cmp.root_distance;    // 3 semitones
+cmp.same_quality;     // false
+cmp.same_size;        // true
+cmp.enharmonic;       // false
+cmp.voice_leading;    // min semitone movement
+cmp.transformation;   // NEO_R (Relative)
+cmp.interval_vector_a[6]; // Forte interval vector
+cmp.interval_vector_b[6];
+
+char buf[4];
+GingoChordComparison::transformationName(cmp.transformation, buf, sizeof(buf));
+// "R", "P", "L", or ""
+```
+
 ### Examples
 
 | Example | Description | Tier |
@@ -242,6 +346,7 @@ seq.transpose(5);   // transpose all events
 | ScaleExplorer | Scales, modes, pentatonic | 2 |
 | HarmonicField | Triads, sevenths, harmonic functions | 2 |
 | TDisplayS3Explorer | 7-page interactive GUI on LilyGo T-Display S3 | 3 |
+| MIDI2_Monitor | Serial MIDI in → chord/field detection → UMP Flex Data | 3 |
 
 #### T-Display S3 Explorer
 
@@ -323,6 +428,7 @@ uint16_t len = seq.toMIDI(buf, sizeof(buf), 1);  // Export to MIDI bytes
 | MIDI_to_Gingoduino | Receive MIDI USB/BLE, analyze with Gingoduino | 3 |
 | RealtimeChordIdentifier | Identify chords from simultaneous notes | 3 |
 | Gingoduino_to_MIDI | Create sequence, export as MIDI serial | 3 |
+| MIDI2_Monitor | Serial MIDI in → Monitor → UMP Flex Data output | 3 |
 
 ### Native Testing
 
@@ -332,7 +438,7 @@ g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra \
     && ./extras/tests/test_native
 ```
 
-275 tests, 0 failures. No Arduino framework needed.
+384 tests, 0 failures. No Arduino framework needed.
 
 ### License
 
@@ -359,8 +465,8 @@ Port da [biblioteca gingo C++17](https://github.com/sauloverissimo/gingo). Arqui
 | Tier | Modulos | Plataformas |
 |------|---------|-------------|
 | 1 | Note, Interval, Chord | AVR (Uno, Nano) |
-| 2 | + Scale, Field, Duration, Tempo, TimeSig, Fretboard | ESP8266 |
-| 3 | + Event, Sequence, Tree, Progression | ESP32, RP2040, Teensy, Daisy Seed |
+| 2 | + Scale, Field, Duration, Tempo, TimeSig, Fretboard, NoteContext, Monitor, MIDI1 | ESP8266 |
+| 3 | + Event, Sequence, Tree, Progression, ChordComparison, MIDI2 | ESP32, RP2040, Teensy, Daisy Seed |
 
 Tiers auto-detectados por plataforma, ou force com `#define GINGODUINO_TIER N`.
 
@@ -374,9 +480,14 @@ Tiers auto-detectados por plataforma, ou force com `#define GINGODUINO_TIER N`.
 - Analise de progressao: identify, deduce (ranked), predict (proximo branch)
 - Engine de braco: violao, cavaquinho, bandolim, ukulele com scoring de digitacao
 - Eventos musicais (nota, acorde, pausa) e sequencias com tempo/compasso
+- Monitor harmonico em tempo real com deteccao de acordes/campos e contexto por nota
+- Parser MIDI 1.0 (running status, SysEx) e dispatcher stateless
+- Geracao de UMP Flex Data MIDI 2.0 (chord name, key signature, per-note controller)
+- Suporte MIDI-CI (discovery, profile inquiry, capabilities)
+- Comparacao de acordes: 17 dimensoes incluindo transformacoes Neo-Riemannian e vetores Forte
 - Arrays de tamanho fixo, sem alocacao dinamica, suporte PROGMEM
 - Compativel com Arduino IDE, PlatformIO e ESP-IDF
-- 275 testes nativos passando
+- 384 testes nativos passando
 
 ### Instalacao
 
@@ -438,6 +549,7 @@ void loop() {}
 | ScaleExplorer | Escalas, modos, pentatonica | 2 |
 | HarmonicField | Triades, tetrades, funcoes harmonicas | 2 |
 | TDisplayS3Explorer | GUI interativa com 7 paginas no LilyGo T-Display S3 | 3 |
+| MIDI2_Monitor | Serial MIDI in → deteccao de acordes/campos → UMP Flex Data | 3 |
 
 #### T-Display S3 Explorer
 
@@ -462,6 +574,102 @@ Demo interativo no LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI) com sin
 | <img src="examples/TDisplayS3Explorer/images/tdisplay5.jpg" alt="Fretboard" width="200"> | **Fretboard** — Digitações de acordes e overlay de escalas |
 
 Páginas adicionais: **Harmonic Field** (tríades, funções T/S/D, tétrades) e **Sequence** (timeline com grid de beats).
+
+#### GingoMonitor (Tier 2+)
+```cpp
+GingoMonitor monitor;
+
+// Alimentar eventos MIDI
+monitor.noteOn(60, 100);   // C4, velocity 100
+monitor.noteOn(64, 100);   // E4
+monitor.noteOn(67, 100);   // G4
+
+// Consultar estado
+monitor.hasChord();         // true
+monitor.currentChord();     // GingoChord("CM")
+monitor.hasField();         // true (deduzido das notas ativas)
+monitor.currentField();     // GingoField
+monitor.activeNoteCount();  // 3
+
+// Pedal sustain
+monitor.sustainOn();
+monitor.sustainOff();
+monitor.reset();
+
+// Callbacks — function pointer (todos os tiers)
+void onChord(const GingoChord& c, void* ctx) { /* ... */ }
+monitor.onChordDetected(onChord, nullptr);
+
+// Callbacks — std::function lambda (apenas Tier 3)
+monitor.onChordDetected([](const GingoChord& c) { /* ... */ });
+monitor.onFieldChanged([](const GingoField& f) { /* ... */ });
+monitor.onNoteOn([](const GingoNoteContext& ctx) {
+    ctx.note;      // GingoNote
+    ctx.degree;    // grau da escala (1-7, 0 se cromatico)
+    ctx.inScale;   // bool
+    ctx.function;  // FUNC_TONIC / FUNC_SUBDOMINANT / FUNC_DOMINANT
+    ctx.interval;  // GingoInterval a partir da tonica
+});
+```
+
+#### GingoMIDI1 — Parser MIDI 1.0 (Tier 2+)
+```cpp
+GingoMonitor monitor;
+
+// Dispatch stateless (mensagens pre-parseadas)
+GingoMIDI1::dispatch(0x90, 60, 100, monitor);  // Note On C4
+GingoMIDI1::dispatch(0x80, 60, 0, monitor);    // Note Off C4
+GingoMIDI1::dispatch(0xB0, 64, 127, monitor);  // Sustain On
+GingoMIDI1::dispatch(0xB0, 123, 0, monitor);   // All Notes Off
+
+// Parser stateful de byte stream (running status, SysEx, real-time)
+GingoMIDI1Parser parser;
+while (Serial1.available()) {
+    parser.feed((uint8_t)Serial1.read(), monitor);
+}
+```
+
+#### GingoMIDI2 — MIDI 2.0 UMP (Tier 3)
+```cpp
+// Gerar pacotes UMP Flex Data
+GingoUMP ump = GingoMIDI2::chordName(GingoChord("CM"));
+GingoUMP ump = GingoMIDI2::keySignature(scale);
+GingoUMP ump = GingoMIDI2::perNoteController(noteCtx, group, channel);
+
+ump.wordCount;   // 4 (128-bit Flex Data) ou 2 (64-bit)
+ump.words[0..3]; // palavras UMP raw
+
+uint8_t buf[16];
+ump.toBytesBE(buf); // serializar big-endian
+
+// Dispatch de mensagens UMP recebidas para o monitor
+GingoMIDI2::dispatch(word0, word1, monitor);
+
+// MIDI-CI
+uint8_t sysex[32];
+uint8_t len = GingoMIDICI::discoveryRequest(sysex, sizeof(sysex));
+len = GingoMIDICI::profileInquiryReply(sysex, sizeof(sysex));
+char json[255];
+uint8_t jlen = GingoMIDICI::capabilitiesJSON(json, sizeof(json));
+```
+
+#### GingoChordComparison (Tier 3)
+```cpp
+GingoChordComparison cmp(GingoChord("CM"), GingoChord("Am"));
+cmp.common_count;     // 2 (C e E em comum)
+cmp.root_distance;    // 3 semitons
+cmp.same_quality;     // false
+cmp.same_size;        // true
+cmp.enharmonic;       // false
+cmp.voice_leading;    // movimento minimo em semitons
+cmp.transformation;   // NEO_R (Relative)
+cmp.interval_vector_a[6]; // vetor intervalar Forte
+cmp.interval_vector_b[6];
+
+char buf[4];
+GingoChordComparison::transformationName(cmp.transformation, buf, sizeof(buf));
+// "R", "P", "L", ou ""
+```
 
 ### MIDI Support (v0.2.0+)
 
@@ -519,6 +727,7 @@ uint16_t len = seq.toMIDI(buf, sizeof(buf), 1);  // Export to MIDI bytes
 | MIDI_to_Gingoduino | Recebe MIDI USB/BLE, analisa com Gingoduino | 3 |
 | RealtimeChordIdentifier | Identifica acordes de notas simultâneas | 3 |
 | Gingoduino_to_MIDI | Cria sequência, exporta como MIDI serial | 3 |
+| MIDI2_Monitor | Serial MIDI in → Monitor → UMP Flex Data output | 3 |
 
 ### Native Tests
 
@@ -528,7 +737,7 @@ g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra \
     && ./extras/tests/test_native
 ```
 
-275 testes, 0 falhas. Sem framework Arduino.
+384 testes, 0 falhas. Sem framework Arduino.
 
 ### Licenca
 
