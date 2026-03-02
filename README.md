@@ -11,7 +11,7 @@
   <a href="https://www.arduino.cc/reference/en/libraries/gingoduino/"><img src="https://img.shields.io/badge/Arduino-compatible-00878F?logo=arduino&logoColor=white" alt="Arduino"></a>
   <a href="https://registry.platformio.org/libraries/sauloverissimo/Gingoduino"><img src="https://img.shields.io/badge/PlatformIO-compatible-FF7F00?logo=platformio&logoColor=white" alt="PlatformIO"></a>
   <a href="https://github.com/sauloverissimo/gingoduino"><img src="https://img.shields.io/badge/ESP--IDF-compatible-E7352C?logo=espressif&logoColor=white" alt="ESP-IDF"></a>
-  <a href="https://github.com/sauloverissimo/gingoduino/blob/main/src/GingoMIDI2.h"><img src="https://img.shields.io/badge/MIDI_2.0-UMP_Flex_Data-8A2BE2" alt="MIDI 2.0"></a>
+  <a href="https://github.com/sauloverissimo/gingoduino/blob/main/src/GingoMIDI2.h"><img src="https://img.shields.io/badge/MIDI_2.0-UMP_|_Flex_Data_|_MIDI--CI-8A2BE2" alt="MIDI 2.0"></a>
   <a href="https://github.com/sauloverissimo/gingoduino/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
 </p>
 
