@@ -1,0 +1,39 @@
+name: Native Build & Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: g++ native test suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build native test binary
+        run: |
+          g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra -Wno-unused-parameter \
+              -o extras/tests/test_native extras/tests/test_native.cpp
+
+      - name: Run native tests
+        run: ./extras/tests/test_native
+
+      - name: Download cmidi2 header (integration test)
+        run: |
+          mkdir -p extras/tests/vendor
+          curl -sSL \
+            https://raw.githubusercontent.com/atsushieno/cmidi2/main/cmidi2.h \
+            -o extras/tests/vendor/cmidi2.h
+
+      - name: Build integration test (Gingoduino + cmidi2, zero-conflict)
+        run: |
+          g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Iextras/tests/vendor \
+              -Wall -Wno-unused-variable -Wno-unused-parameter -Wno-comment \
+              -o extras/tests/test_integration extras/tests/test_integration.cpp
+
+      - name: Run integration test
+        run: ./extras/tests/test_integration

@@ -22,6 +22,8 @@
 #include "src/GingoFretboard.cpp"
 #include "src/GingoTree.cpp"
 #include "src/GingoProgression.cpp"
+#include "src/GingoMonitor.cpp"
+#include "src/GingoChordComparison.cpp"
 
 using namespace gingoduino;
 
@@ -1070,6 +1072,469 @@ void testProgression() {
 }
 
 // =====================================================================
+// NoteContext
+// =====================================================================
+
+void testNoteContext() {
+    printf("\n=== GingoNoteContext ===\n");
+
+    GingoField f("C", SCALE_MAJOR);
+
+    // E is the 3rd degree of C Major (Tonic function)
+    GingoNoteContext ctx = f.noteContext(GingoNote("E"));
+    CHECK(ctx.degree == 3, "noteContext E degree=3");
+    CHECK(ctx.inScale == true, "noteContext E inScale=true");
+    CHECK(ctx.function == FUNC_TONIC, "noteContext E function=Tonic");
+    CHECK(ctx.interval.semitones() == 4, "noteContext E interval=4 semitones");
+
+    // G is the 5th degree (Dominant)
+    GingoNoteContext ctxG = f.noteContext(GingoNote("G"));
+    CHECK(ctxG.degree == 5, "noteContext G degree=5");
+    CHECK(ctxG.function == FUNC_DOMINANT, "noteContext G function=Dominant");
+    CHECK(ctxG.interval.semitones() == 7, "noteContext G interval=7");
+
+    // F is the 4th degree (Subdominant)
+    GingoNoteContext ctxF = f.noteContext(GingoNote("F"));
+    CHECK(ctxF.degree == 4, "noteContext F degree=4");
+    CHECK(ctxF.function == FUNC_SUBDOMINANT, "noteContext F function=Subdominant");
+
+    // C is the 1st degree (Tonic)
+    GingoNoteContext ctxC = f.noteContext(GingoNote("C"));
+    CHECK(ctxC.degree == 1, "noteContext C degree=1");
+    CHECK(ctxC.inScale == true, "noteContext C inScale=true");
+    CHECK(ctxC.interval.semitones() == 0, "noteContext C interval=0");
+
+    // C# is not in C Major
+    GingoNoteContext ctxCs = f.noteContext(GingoNote("C#"));
+    CHECK(ctxCs.degree == 0, "noteContext C# degree=0 (not in scale)");
+    CHECK(ctxCs.inScale == false, "noteContext C# inScale=false");
+}
+
+// =====================================================================
+// ChordComparison
+// =====================================================================
+
+void testChordComparison() {
+    printf("\n=== GingoChordComparison ===\n");
+
+    // CM vs Am — relative pair (R transform)
+    {
+        GingoChord cm("CM"), am("Am");
+        GingoChordComparison cmp = GingoChordComparison::compute(cm, am);
+        CHECK(cmp.common_count == 2, "CM/Am common_count=2 (C and E)");
+        CHECK(cmp.root_distance == 3, "CM/Am root_distance=3");
+        CHECK(!cmp.same_quality, "CM/Am same_quality=false (M vs m)");
+        CHECK(cmp.same_size, "CM/Am same_size=true (both triads)");
+        CHECK(cmp.transformation == NEO_R, "CM/Am transform=R (Relative)");
+        CHECK(cmp.same_interval_vector, "CM/Am same interval vector");
+        CHECK(!cmp.enharmonic, "CM/Am not enharmonic");
+        CHECK(cmp.voice_leading >= 0, "CM/Am voice_leading computed");
+    }
+
+    // CM vs Cm — parallel pair (P transform)
+    {
+        GingoChord cm("CM"), cmin("Cm");
+        GingoChordComparison cmp = GingoChordComparison::compute(cm, cmin);
+        CHECK(cmp.root_distance == 0, "CM/Cm root_distance=0 (same root)");
+        CHECK(cmp.transformation == NEO_P, "CM/Cm transform=P (Parallel)");
+        CHECK(!cmp.same_quality, "CM/Cm same_quality=false");
+    }
+
+    // CM vs Em — leading tone (L transform)
+    {
+        GingoChord cm("CM"), em("Em");
+        GingoChordComparison cmp = GingoChordComparison::compute(cm, em);
+        CHECK(cmp.common_count == 2, "CM/Em common_count=2 (E and G)");
+        CHECK(cmp.transformation == NEO_L, "CM/Em transform=L (Leading-tone)");
+    }
+
+    // CM vs CM — same chord
+    {
+        GingoChord cm1("CM"), cm2("CM");
+        GingoChordComparison cmp = GingoChordComparison::compute(cm1, cm2);
+        CHECK(cmp.common_count == 3, "CM/CM common_count=3 (all)");
+        CHECK(cmp.root_distance == 0, "CM/CM root_distance=0");
+        CHECK(cmp.same_quality, "CM/CM same_quality=true");
+        CHECK(cmp.enharmonic, "CM/CM enharmonic=true (identical sets)");
+        CHECK(cmp.voice_leading == 0, "CM/CM voice_leading=0");
+    }
+
+    // CM vs Dm — no shared pitch classes
+    {
+        GingoChord cm("CM"), dm("Dm");
+        GingoChordComparison cmp = GingoChordComparison::compute(cm, dm);
+        // CM={C,E,G}={0,4,7}, Dm={D,F,A}={2,5,9} — 0 shared
+        CHECK(cmp.common_count == 0, "CM/Dm common_count=0 (no shared PCs)");
+        CHECK(cmp.root_distance == 2, "CM/Dm root_distance=2");
+    }
+
+    // transformationName
+    {
+        const char* p = GingoChordComparison::transformationName(NEO_P);
+        CHECK(strcmp(p, "P") == 0, "transformationName P");
+        const char* r = GingoChordComparison::transformationName(NEO_R);
+        CHECK(strcmp(r, "R") == 0, "transformationName R");
+        const char* none = GingoChordComparison::transformationName(NEO_NONE);
+        CHECK(strcmp(none, "") == 0, "transformationName NONE=\"\"");
+    }
+
+    // Forte interval vector: major triad should be {0,0,1,1,1,0}
+    {
+        GingoChord cm("CM"), am("Am");
+        GingoChordComparison cmp = GingoChordComparison::compute(cm, am);
+        CHECK(cmp.interval_vector_a[0] == 0, "CM Forte iv[0]=0");
+        CHECK(cmp.interval_vector_a[1] == 0, "CM Forte iv[1]=0");
+        CHECK(cmp.interval_vector_a[2] == 1, "CM Forte iv[2]=1");
+        CHECK(cmp.interval_vector_a[3] == 1, "CM Forte iv[3]=1");
+        CHECK(cmp.interval_vector_a[4] == 1, "CM Forte iv[4]=1");
+        CHECK(cmp.interval_vector_a[5] == 0, "CM Forte iv[5]=0");
+    }
+}
+
+// =====================================================================
+// Monitor
+// =====================================================================
+
+void testMonitor() {
+    printf("\n=== GingoMonitor ===\n");
+
+    // Test basic note tracking via polling
+    {
+        GingoMonitor mon;
+        mon.noteOn(60, 100);  // C4
+        mon.noteOn(64, 100);  // E4
+        mon.noteOn(67, 100);  // G4
+        // Should detect CM chord
+        CHECK(mon.hasChord(), "3 notes → chord detected");
+        CHECK(strcmp(mon.currentChord().name(), "CM") == 0, "C+E+G = CM");
+    }
+
+    // Note off removes note, chord may change
+    {
+        GingoMonitor mon;
+        mon.noteOn(60, 100);  // C
+        mon.noteOn(64, 100);  // E
+        mon.noteOn(67, 100);  // G
+        CHECK(mon.hasChord(), "CM detected before noteOff");
+        mon.noteOff(67);  // remove G
+        // C+E alone — not enough for a chord
+        CHECK(!mon.hasChord(), "C+E alone not a chord");
+    }
+
+    // Sustain pedal keeps notes
+    {
+        GingoMonitor mon;
+        mon.noteOn(60, 100);  // C
+        mon.noteOn(64, 100);  // E
+        mon.noteOn(67, 100);  // G
+        mon.sustainOn();
+        mon.noteOff(67);  // G sustained
+        // Chord should still be detected (G is sustained)
+        CHECK(mon.hasChord(), "sustain keeps chord");
+        CHECK(strcmp(mon.currentChord().name(), "CM") == 0, "sustained chord still CM");
+        mon.sustainOff();  // releases sustained notes
+        CHECK(!mon.hasChord(), "sustain off clears chord");
+    }
+
+    // Reset clears everything
+    {
+        GingoMonitor mon;
+        mon.noteOn(60, 100);
+        mon.noteOn(64, 100);
+        mon.noteOn(67, 100);
+        CHECK(mon.hasChord(), "chord before reset");
+        mon.reset();
+        CHECK(!mon.hasChord(), "reset clears chord");
+    }
+
+#if GINGODUINO_TIER >= 3
+    // Lambda callback (std::function, Tier 3)
+    {
+        GingoMonitor mon;
+        int noteCount = 0;
+        mon.onNoteOn([&noteCount](const GingoNoteContext& ctx) {
+            (void)ctx;
+            noteCount++;
+        });
+        mon.noteOn(60, 100);
+        mon.noteOn(64, 100);
+        CHECK(noteCount == 2, "onNoteOn lambda called 2 times");
+
+        bool chordFired = false;
+        mon.onChordDetected([&chordFired](const GingoChord& c) {
+            (void)c;
+            chordFired = true;
+        });
+        mon.noteOn(67, 100);  // completes CM
+        CHECK(chordFired, "onChordDetected lambda fired");
+    }
+#endif
+}
+
+// =====================================================================
+// MIDI1
+// =====================================================================
+
+void testMIDI1() {
+    printf("\n=== GingoMIDI1 ===\n");
+
+    // GingoMIDI1::dispatch — Note On
+    {
+        GingoMonitor mon;
+        bool handled = GingoMIDI1::dispatch(0x90, 60, 100, mon);
+        CHECK(handled, "dispatch 0x90 Note On handled");
+    }
+
+    // dispatch — Note On vel=0 → Note Off
+    {
+        GingoMonitor mon;
+        GingoMIDI1::dispatch(0x90, 60, 100, mon);
+        bool handled = GingoMIDI1::dispatch(0x90, 60, 0, mon);
+        CHECK(handled, "dispatch 0x90 vel=0 → Note Off handled");
+    }
+
+    // dispatch — Note Off
+    {
+        GingoMonitor mon;
+        GingoMIDI1::dispatch(0x90, 60, 100, mon);
+        bool handled = GingoMIDI1::dispatch(0x80, 60, 0, mon);
+        CHECK(handled, "dispatch 0x80 Note Off handled");
+    }
+
+    // dispatch — CC64 sustain on/off
+    {
+        GingoMonitor mon;
+        bool on  = GingoMIDI1::dispatch(0xB0, 64, 127, mon);
+        bool off = GingoMIDI1::dispatch(0xB0, 64, 0, mon);
+        CHECK(on,  "dispatch CC64 sustain on");
+        CHECK(off, "dispatch CC64 sustain off");
+    }
+
+    // dispatch — CC123 All Notes Off → reset
+    {
+        GingoMonitor mon;
+        GingoMIDI1::dispatch(0x90, 60, 100, mon);
+        bool handled = GingoMIDI1::dispatch(0xB0, 123, 0, mon);
+        CHECK(handled, "dispatch CC123 All Notes Off");
+        CHECK(!mon.hasChord(), "CC123 clears monitor");
+    }
+
+    // dispatch — unhandled returns false
+    {
+        GingoMonitor mon;
+        bool handled = GingoMIDI1::dispatch(0xE0, 0, 64, mon);
+        CHECK(!handled, "pitch bend not handled");
+    }
+
+    // GingoMIDI1Parser::feed — builds chord from raw bytes
+    {
+        GingoMIDI1Parser parser;
+        GingoMonitor mon;
+        // Note On for C4 (0x90, 60, 100)
+        parser.feed(0x90, mon);
+        parser.feed(60, mon);
+        parser.feed(100, mon);
+        // Note On for E4 (running status: 64, 100)
+        parser.feed(64, mon);
+        parser.feed(100, mon);
+        // Note On for G4 (running status: 67, 100)
+        parser.feed(67, mon);
+        parser.feed(100, mon);
+        CHECK(mon.hasChord(), "parser feed → CM detected");
+        CHECK(strcmp(mon.currentChord().name(), "CM") == 0, "parser feed → CM");
+    }
+
+    // Parser — SysEx absorbed, real-time bytes ignored
+    {
+        GingoMIDI1Parser parser;
+        GingoMonitor mon;
+        // Start SysEx
+        parser.feed(0xF0, mon);
+        parser.feed(0x7E, mon);
+        parser.feed(0x01, mon);
+        // Real-time byte mid-SysEx
+        parser.feed(0xF8, mon);
+        // End SysEx
+        parser.feed(0xF7, mon);
+        // Now send a note — should work normally
+        parser.feed(0x90, mon);
+        parser.feed(60, mon);
+        parser.feed(100, mon);
+        // Verify note was received (monitor has at least one note)
+        // Note: single note won't detect chord, but no crash is the test
+        CHECK(!mon.hasChord(), "SysEx absorbed, single note no chord");
+    }
+}
+
+// =====================================================================
+// MIDI2
+// =====================================================================
+
+void testMIDI2() {
+    printf("\n=== GingoMIDI2 ===\n");
+
+    // chordName — CM
+    {
+        GingoUMP ump = GingoMIDI2::chordName(GingoChord("CM"));
+        CHECK(ump.wordCount == 4, "chordName CM wordCount=4");
+        uint32_t mt = (ump.words[0] >> 28) & 0xF;
+        CHECK(mt == 0xD, "chordName MT=0xD (Flex Data)");
+        uint32_t status = ump.words[0] & 0xFF;
+        CHECK(status == 0x06, "chordName status=0x06");
+        uint32_t letter = (ump.words[1] >> 24) & 0xF;
+        CHECK(letter == 3, "chordName C letter=3");
+        uint32_t acc = (ump.words[1] >> 28) & 0xF;
+        CHECK(acc == 0, "chordName C accidental=natural");
+        uint32_t type = (ump.words[1] >> 16) & 0xFF;
+        CHECK(type == 1, "chordName CM type=1 (Major)");
+    }
+
+    // chordName — Am7
+    {
+        GingoUMP ump = GingoMIDI2::chordName(GingoChord("Am7"));
+        uint32_t letter = (ump.words[1] >> 24) & 0xF;
+        CHECK(letter == 1, "chordName A letter=1");
+        uint32_t type = (ump.words[1] >> 16) & 0xFF;
+        CHECK(type == 9, "chordName Am7 type=9 (Minor 7th)");
+    }
+
+    // chordName — F#m
+    {
+        GingoUMP ump = GingoMIDI2::chordName(GingoChord("F#m"));
+        uint32_t letter = (ump.words[1] >> 24) & 0xF;
+        CHECK(letter == 6, "chordName F# letter=6");
+        uint32_t acc = (ump.words[1] >> 28) & 0xF;
+        CHECK(acc == 1, "chordName F# accidental=sharp");
+        uint32_t type = (ump.words[1] >> 16) & 0xFF;
+        CHECK(type == 7, "chordName F#m type=7 (Minor)");
+    }
+
+    // chordName — Bbdim
+    {
+        GingoUMP ump = GingoMIDI2::chordName(GingoChord("Bbdim"));
+        // Bb → natural name A#, so encoded as A# (letter=1, acc=sharp)
+        uint32_t letter = (ump.words[1] >> 24) & 0xF;
+        uint32_t type = (ump.words[1] >> 16) & 0xFF;
+        CHECK(type == 19, "chordName dim type=19 (Diminished)");
+        CHECK(letter >= 1 && letter <= 7, "chordName Bb letter valid");
+    }
+
+    // keySignature — C Major
+    {
+        GingoScale cMaj("C", SCALE_MAJOR);
+        GingoUMP ump = GingoMIDI2::keySignature(cMaj);
+        CHECK(ump.wordCount == 4, "keySig C Major wordCount=4");
+        uint32_t status = ump.words[0] & 0xFF;
+        CHECK(status == 0x05, "keySig status=0x05");
+        uint32_t letter = (ump.words[1] >> 24) & 0xF;
+        CHECK(letter == 3, "keySig C letter=3");
+        uint32_t mode = (ump.words[1] >> 16) & 0xFF;
+        CHECK(mode == 0, "keySig C Major mode=0");
+    }
+
+    // keySignature — A Natural Minor
+    {
+        GingoScale aMin("A", SCALE_NATURAL_MINOR);
+        GingoUMP ump = GingoMIDI2::keySignature(aMin);
+        uint32_t letter = (ump.words[1] >> 24) & 0xF;
+        CHECK(letter == 1, "keySig A letter=1");
+        uint32_t mode = (ump.words[1] >> 16) & 0xFF;
+        CHECK(mode == 1, "keySig A minor mode=1");
+    }
+
+    // keySignature — group and channel
+    {
+        GingoScale cMaj("C", SCALE_MAJOR);
+        GingoUMP ump = GingoMIDI2::keySignature(cMaj, 3, 5);
+        uint32_t group = (ump.words[0] >> 24) & 0xF;
+        uint32_t ch    = (ump.words[0] >> 16) & 0xF;
+        CHECK(group == 3, "keySig group=3");
+        CHECK(ch == 5, "keySig channel=5");
+    }
+
+    // perNoteController
+    {
+        GingoField f("C", SCALE_MAJOR);
+        GingoNoteContext ctx = f.noteContext(GingoNote("E"));
+        GingoUMP ump = GingoMIDI2::perNoteController(64, ctx);
+        CHECK(ump.wordCount == 2, "perNoteCtrl wordCount=2");
+        uint32_t mt = (ump.words[0] >> 28) & 0xF;
+        CHECK(mt == 0x4, "perNoteCtrl MT=0x4");
+        uint32_t deg = (ump.words[1] >> 24) & 0xFF;
+        CHECK(deg == 3, "perNoteCtrl degree=3 (E in C Major)");
+        uint32_t func = (ump.words[1] >> 16) & 0xFF;
+        CHECK(func == (uint32_t)FUNC_TONIC, "perNoteCtrl func=Tonic");
+        uint32_t inSc = ump.words[1] & 0xFF;
+        CHECK(inSc == 1, "perNoteCtrl inScale=1");
+    }
+
+    // GingoUMP serialization
+    {
+        GingoUMP ump = GingoMIDI2::chordName(GingoChord("CM"));
+        uint8_t buf[16];
+        uint8_t len = ump.toBytesBE(buf, sizeof(buf));
+        CHECK(len == 16, "toBytesBE writes 16 bytes");
+        CHECK(ump.byteCount() == 16, "byteCount()=16");
+        // First byte should be 0xD0 (MT=0xD, group=0)
+        CHECK(buf[0] == 0xD0, "toBytesBE first byte 0xD0");
+    }
+
+    // dispatch — MT=0x2 (MIDI 1.0 over UMP)
+    {
+        GingoMonitor mon;
+        // Note On C4: MT=2, group=0, opcode=0x9, ch=0, note=60, vel=100
+        uint32_t words[2];
+        words[0] = (0x2U << 28) | (0x9U << 20) | (60U << 8) | 100U;
+        words[1] = 0;
+        bool handled = GingoMIDI2::dispatch(words, mon);
+        CHECK(handled, "dispatch MT=2 Note On handled");
+    }
+
+    // dispatch — MT=0x4 (MIDI 2.0)
+    {
+        GingoMonitor mon;
+        // Note On C4: MT=4, group=0, opcode=9, ch=0, note=60, reserved=0
+        uint32_t words[2];
+        words[0] = (0x4U << 28) | (0x9U << 20) | (60U << 8);
+        words[1] = 0x8000U << 16;  // vel16 = 0x8000 (non-zero)
+        bool handled = GingoMIDI2::dispatch(words, mon);
+        CHECK(handled, "dispatch MT=4 Note On handled");
+    }
+
+    // GingoMIDICI — discoveryRequest
+    {
+        uint8_t buf[64];
+        uint8_t len = GingoMIDICI::discoveryRequest(buf, sizeof(buf));
+        CHECK(len == 31, "discoveryRequest len=31");
+        CHECK(buf[0] == 0xF0, "discoveryRequest starts with SysEx");
+        CHECK(buf[len - 1] == 0xF7, "discoveryRequest ends with SysEx");
+        CHECK(buf[3] == 0x0D, "discoveryRequest MIDI-CI ID");
+        CHECK(buf[4] == 0x70, "discoveryRequest sub-ID 0x70");
+    }
+
+    // GingoMIDICI — profileInquiryReply
+    {
+        uint8_t buf[32];
+        uint8_t len = GingoMIDICI::profileInquiryReply(buf, sizeof(buf));
+        CHECK(len == 23, "profileInquiryReply len=23");
+        CHECK(buf[0] == 0xF0, "profileInquiryReply SysEx start");
+        CHECK(buf[4] == 0x22, "profileInquiryReply sub-ID 0x22");
+        CHECK(buf[len - 1] == 0xF7, "profileInquiryReply SysEx end");
+    }
+
+    // GingoMIDICI — capabilitiesJSON
+    {
+        char buf[255];
+        uint8_t len = GingoMIDICI::capabilitiesJSON(buf, (uint8_t)sizeof(buf));
+        CHECK(len > 0, "capabilitiesJSON returns bytes");
+        CHECK(buf[0] == '{', "capabilitiesJSON starts with {");
+        // Verify contains key fields
+        CHECK(strstr(buf, "gingoduino") != nullptr, "capabilitiesJSON has name");
+        CHECK(strstr(buf, "chord_detect") != nullptr, "capabilitiesJSON has chord_detect");
+    }
+}
+
+// =====================================================================
 // Main
 // =====================================================================
 
@@ -1097,6 +1562,11 @@ int main() {
     testFieldDeduce();
     testTree();
     testProgression();
+    testNoteContext();
+    testChordComparison();
+    testMonitor();
+    testMIDI1();
+    testMIDI2();
 
     printf("\n======================\n");
     printf("Tests: %d  Passed: %d  Failed: %d\n", tests, tests - failures, failures);

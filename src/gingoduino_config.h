@@ -67,6 +67,26 @@
   #define GINGODUINO_HAS_COMPARISON    0
 #endif
 
+// GingoMonitor: event-driven harmonic tracker (Tier 2+, needs Field)
+#if GINGODUINO_HAS_FIELD
+  #define GINGODUINO_HAS_MONITOR  1
+#else
+  #define GINGODUINO_HAS_MONITOR  0
+#endif
+
+// GingoMIDI1: raw MIDI byte parser (Tier 2+, needs Monitor)
+// GingoMIDI2: UMP Flex Data + MIDI-CI generator (Tier 3, needs Sequence)
+#if GINGODUINO_HAS_SEQUENCE
+  #define GINGODUINO_HAS_MIDI1  1
+  #define GINGODUINO_HAS_MIDI2  1
+#elif GINGODUINO_HAS_FIELD
+  #define GINGODUINO_HAS_MIDI1  1
+  #define GINGODUINO_HAS_MIDI2  0
+#else
+  #define GINGODUINO_HAS_MIDI1  0
+  #define GINGODUINO_HAS_MIDI2  0
+#endif
+
 // ---------------------------------------------------------------------------
 // PROGMEM portability
 // ---------------------------------------------------------------------------

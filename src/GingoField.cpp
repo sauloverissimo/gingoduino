@@ -345,6 +345,19 @@ uint8_t GingoField::deduce(const char* const* items, uint8_t itemCount,
     return written;
 }
 
+GingoNoteContext GingoField::noteContext(const GingoNote& note) const {
+    GingoNoteContext ctx;
+    ctx.note = note;
+    uint8_t deg = scale_.degreeOf(note);
+    ctx.degree   = deg;
+    ctx.inScale  = (deg > 0);
+    ctx.function = (deg > 0) ? function(deg) : FUNC_TONIC;
+    uint8_t semi = static_cast<uint8_t>(
+        (note.semitone() - tonic().semitone() + 12) % 12);
+    ctx.interval = GingoInterval(semi);
+    return ctx;
+}
+
 } // namespace gingoduino
 
 #endif // GINGODUINO_HAS_FIELD

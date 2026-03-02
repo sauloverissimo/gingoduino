@@ -20,8 +20,11 @@ ROADMAP.md
 *.swo
 *~
 
-# Brainstorming / Philosophy (local notes, not versioned)
+# Brainstorming / Philosophy / Internal drafts (local notes, not versioned)
 filosofando.md
+extras/docs/ecosystem_engagement_draft.md
+extras/tests/test_integration
+extras/tests/vendor/
 
 # OS files
 .DS_Store
