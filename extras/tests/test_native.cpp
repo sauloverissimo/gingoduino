@@ -792,6 +792,78 @@ void testFretboard() {
     GingoFretboard uke = GingoFretboard::ukulele();
     CHECK(uke.numStrings() == 4, "ukulele numStrings=4");
     CHECK(strcmp(uke.name(), "Ukulele") == 0, "ukulele name");
+
+    // English aliases
+    GingoFretboard eng = GingoFretboard::guitar();
+    CHECK(eng.numStrings() == 6, "guitar() numStrings=6");
+    CHECK(strcmp(eng.name(), "Guitar") == 0, "guitar() name=Guitar");
+    CHECK(eng.openMidi(0) == 40, "guitar() same tuning as violao");
+
+    GingoFretboard mand = GingoFretboard::mandolin();
+    CHECK(mand.numStrings() == 4, "mandolin() numStrings=4");
+    CHECK(strcmp(mand.name(), "Mandolin") == 0, "mandolin() name=Mandolin");
+    CHECK(mand.openMidi(0) == 55, "mandolin() open string 0 = G3 (55)");
+
+    // Alternate tunings
+    GingoFretboard dd = GingoFretboard::dropD();
+    CHECK(dd.numStrings() == 6, "dropD numStrings=6");
+    CHECK(dd.openMidi(0) == 38, "dropD string 0 = D2 (38)");
+    CHECK(dd.openMidi(1) == 45, "dropD string 1 = A2 (45)");
+    {
+        GingoNote dn = dd.noteAt(0, 0);
+        CHECK(strcmp(dn.name(), "D") == 0, "dropD string 0 open = D");
+    }
+
+    GingoFretboard og = GingoFretboard::openG();
+    CHECK(og.openMidi(0) == 38, "openG string 0 = D2 (38)");
+    CHECK(og.openMidi(1) == 43, "openG string 1 = G2 (43)");
+    {
+        GingoNote gn = og.noteAt(1, 0);
+        CHECK(strcmp(gn.name(), "G") == 0, "openG string 1 open = G");
+    }
+
+    GingoFretboard dg = GingoFretboard::dadgad();
+    CHECK(dg.openMidi(0) == 38, "dadgad string 0 = D2 (38)");
+    CHECK(dg.openMidi(4) == 57, "dadgad string 4 = A3 (57)");
+    {
+        GingoNote an = dg.noteAt(4, 0);
+        CHECK(strcmp(an.name(), "A") == 0, "dadgad string 4 open = A");
+    }
+
+    // setString (retune)
+    GingoFretboard custom = GingoFretboard::guitar();
+    custom.setString(0, 38);  // lower to D2 (drop D)
+    CHECK(custom.openMidi(0) == 38, "setString: string 0 retuned to 38");
+    {
+        GingoNote dn2 = custom.noteAt(0, 0);
+        CHECK(strcmp(dn2.name(), "D") == 0, "setString: string 0 = D after retune");
+    }
+    CHECK(custom.openMidi(1) == 45, "setString: other strings unchanged");
+
+    // commonChords
+    GingoScale gMaj("G", SCALE_MAJOR);
+    GingoFingering ccs[7];
+    uint8_t ncc = guitar.commonChords(gMaj, ccs, 7);
+    CHECK(ncc > 0, "commonChords(G major) returns results");
+    printf("         commonChords(G major): %d chords\n", ncc);
+    for (uint8_t i = 0; i < ncc; i++) {
+        printf("           [%d] %s score=%d\n", i, ccs[i].chordName.c_str(), ccs[i].score);
+    }
+
+    // openFingerings / isOpenFingering
+    GingoFingering opens[5];
+    uint8_t nopen = guitar.openFingerings(GingoChord("GM"), opens, 5);
+    CHECK(nopen > 0, "openFingerings(GM) found open shape(s)");
+    if (nopen > 0) {
+        CHECK(guitar.isOpenFingering(opens[0]), "first result of openFingerings is open");
+        printf("         openFingerings(GM): %d open shapes found\n", nopen);
+    }
+
+    // Bandolim alias
+    GingoFretboard bnd = GingoFretboard::bandolim();
+    CHECK(bnd.numStrings() == 4, "bandolim numStrings=4");
+    CHECK(strcmp(bnd.name(), "Bandolim") == 0, "bandolim name=Bandolim");
+    CHECK(bnd.openMidi(0) == mand.openMidi(0), "bandolim same tuning as mandolin");
 }
 
 // =====================================================================

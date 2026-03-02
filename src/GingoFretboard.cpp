@@ -33,6 +33,14 @@ GingoFretboard::GingoFretboard(const char* name,
 // Factories
 // ---------------------------------------------------------------------------
 
+GingoFretboard GingoFretboard::guitar(uint8_t numFrets) {
+    return GingoFretboard("Guitar", data::TUNING_VIOLAO, 6, numFrets);
+}
+
+GingoFretboard GingoFretboard::mandolin(uint8_t numFrets) {
+    return GingoFretboard("Mandolin", data::TUNING_BANDOLIM, 4, numFrets);
+}
+
 GingoFretboard GingoFretboard::violao(uint8_t numFrets) {
     return GingoFretboard("Violao", data::TUNING_VIOLAO, 6, numFrets);
 }
@@ -47,6 +55,18 @@ GingoFretboard GingoFretboard::bandolim(uint8_t numFrets) {
 
 GingoFretboard GingoFretboard::ukulele(uint8_t numFrets) {
     return GingoFretboard("Ukulele", data::TUNING_UKULELE, 4, numFrets);
+}
+
+GingoFretboard GingoFretboard::dropD(uint8_t numFrets) {
+    return GingoFretboard("DropD", data::TUNING_DROP_D, 6, numFrets);
+}
+
+GingoFretboard GingoFretboard::openG(uint8_t numFrets) {
+    return GingoFretboard("OpenG", data::TUNING_OPEN_G, 6, numFrets);
+}
+
+GingoFretboard GingoFretboard::dadgad(uint8_t numFrets) {
+    return GingoFretboard("DADGAD", data::TUNING_DADGAD, 6, numFrets);
 }
 
 // ---------------------------------------------------------------------------
@@ -306,6 +326,76 @@ bool GingoFretboard::identify(const uint8_t* stringFrets, uint8_t count,
     }
 
     return GingoChord::identify(notes, noteCount, output, maxLen);
+}
+
+// ---------------------------------------------------------------------------
+// Retune
+// ---------------------------------------------------------------------------
+
+void GingoFretboard::setString(uint8_t string, uint8_t midiNote) {
+    if (string < numStrings_) {
+        openMidi_[string] = midiNote;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Common chords
+// ---------------------------------------------------------------------------
+
+uint8_t GingoFretboard::commonChords(const GingoScale& scale,
+                                     GingoFingering* output, uint8_t maxResults) const {
+    GingoField field(scale.tonic().name(), scale.parent());
+    GingoChord fieldChords[7];
+    uint8_t numChords = field.chords(fieldChords, 7);
+    uint8_t written = 0;
+
+    for (uint8_t i = 0; i < numChords && written < maxResults; i++) {
+        // Try the first few positions and keep the best-scoring fingering
+        GingoFingering best;
+        bool bestValid = false;
+        for (uint8_t pos = 0; pos < 4; pos++) {
+            GingoFingering fg;
+            if (fingering(fieldChords[i], pos, fg)) {
+                if (!bestValid || fg.score < best.score) {
+                    best = fg;
+                    bestValid = true;
+                }
+            }
+        }
+        if (bestValid) {
+            output[written++] = best;
+        }
+    }
+    return written;
+}
+
+// ---------------------------------------------------------------------------
+// Open fingerings
+// ---------------------------------------------------------------------------
+
+bool GingoFretboard::isOpenFingering(const GingoFingering& fg) const {
+    bool hasOpen = false;
+    for (uint8_t i = 0; i < fg.numStrings; i++) {
+        if (fg.strings[i].action == STRING_OPEN) {
+            hasOpen = true;
+        } else if (fg.strings[i].action == STRING_FRETTED && fg.strings[i].fret > 4) {
+            return false;
+        }
+    }
+    return hasOpen;
+}
+
+uint8_t GingoFretboard::openFingerings(const GingoChord& chord,
+                                       GingoFingering* output, uint8_t maxResults) const {
+    GingoFingering all[GINGODUINO_MAX_FINGERINGS + 4];
+    uint8_t count = fingerings(chord, all, GINGODUINO_MAX_FINGERINGS + 4);
+    uint8_t written = 0;
+    for (uint8_t i = 0; i < count && written < maxResults; i++) {
+        if (isOpenFingering(all[i])) {
+            output[written++] = all[i];
+        }
+    }
+    return written;
 }
 
 // ---------------------------------------------------------------------------

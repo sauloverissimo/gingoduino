@@ -14,6 +14,7 @@
 #include "GingoNote.h"
 #include "GingoChord.h"
 #include "GingoScale.h"
+#include "GingoField.h"
 
 namespace gingoduino {
 
@@ -77,17 +78,32 @@ public:
                    uint8_t numStrings,
                    uint8_t numFrets = 19);
 
-    /// Factory: standard 6-string guitar (violao).
+    /// Factory: standard 6-string guitar (standard tuning).
+    static GingoFretboard guitar(uint8_t numFrets = 19);
+
+    /// Factory: mandolin (4 strings, G D A E).
+    static GingoFretboard mandolin(uint8_t numFrets = 17);
+
+    /// Factory: standard 6-string guitar — Portuguese alias for guitar().
     static GingoFretboard violao(uint8_t numFrets = 19);
 
     /// Factory: cavaquinho (4 strings).
     static GingoFretboard cavaquinho(uint8_t numFrets = 17);
 
-    /// Factory: bandolim / mandolin (4 strings).
+    /// Factory: bandolim — Portuguese alias for mandolin().
     static GingoFretboard bandolim(uint8_t numFrets = 17);
 
     /// Factory: ukulele (4 strings).
     static GingoFretboard ukulele(uint8_t numFrets = 17);
+
+    /// Factory: drop D tuning (D A D G B E).
+    static GingoFretboard dropD(uint8_t numFrets = 19);
+
+    /// Factory: open G tuning (D G D G B D).
+    static GingoFretboard openG(uint8_t numFrets = 19);
+
+    /// Factory: DADGAD tuning (D A D G A D).
+    static GingoFretboard dadgad(uint8_t numFrets = 19);
 
     /// Instrument name.
     const char* name() const { return name_.c_str(); }
@@ -139,6 +155,24 @@ public:
     /// @return true if a chord was identified
     bool identify(const uint8_t* stringFrets, uint8_t count,
                   char* output, uint8_t maxLen) const;
+
+    /// Retune a single string to a new MIDI note.
+    void setString(uint8_t string, uint8_t midiNote);
+
+    /// Find the best fingering for each diatonic chord of the given scale.
+    /// Uses the scale's harmonic field (triads). Returns number of fingerings written.
+    /// Note: uses the parent scale type — modes return their parallel major/minor field.
+    uint8_t commonChords(const GingoScale& scale,
+                         GingoFingering* output, uint8_t maxResults) const;
+
+    /// Return true if this fingering uses at least one open string
+    /// and all fretted notes are within the first 4 frets.
+    bool isOpenFingering(const GingoFingering& fg) const;
+
+    /// Find open-position fingerings for a chord (open strings, frets 1-4).
+    /// Returns the number of fingerings written.
+    uint8_t openFingerings(const GingoChord& chord,
+                           GingoFingering* output, uint8_t maxResults) const;
 
     /// Create a new fretboard with a capo at the given fret.
     GingoFretboard capo(uint8_t fret) const;

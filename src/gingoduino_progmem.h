@@ -540,6 +540,15 @@ static const uint8_t TUNING_BANDOLIM[4] PROGMEM = { 55, 62, 69, 76 };
 // Ukulele — G4 C4 E4 A4
 static const uint8_t TUNING_UKULELE[4] PROGMEM = { 67, 60, 64, 69 };
 
+// Drop D — D2 A2 D3 G3 B3 E4
+static const uint8_t TUNING_DROP_D[6] PROGMEM = { 38, 45, 50, 55, 59, 64 };
+
+// Open G — D2 G2 D3 G3 B3 D4
+static const uint8_t TUNING_OPEN_G[6] PROGMEM = { 38, 43, 50, 55, 59, 62 };
+
+// DADGAD — D2 A2 D3 G3 A3 D4
+static const uint8_t TUNING_DADGAD[6] PROGMEM = { 38, 45, 50, 55, 57, 62 };
+
 #endif // GINGODUINO_HAS_FRETBOARD
 
 // ===================================================================

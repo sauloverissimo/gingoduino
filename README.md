@@ -43,7 +43,7 @@ Tiers auto-select based on platform, or override with `#define GINGODUINO_TIER N
 - Harmonic field analysis with T/S/D functions and roles (+ deduce from notes/chords)
 - Harmonic tree (directed graph, major/minor, classical + jazz traditions)
 - Progression analysis: identify, deduce (ranked), predict (next branch)
-- Fretboard engine: violao, cavaquinho, bandolim, ukulele with fingering scoring
+- Fretboard engine: guitar/violao, cavaquinho, mandolin/bandolim, ukulele; alternate tunings (Drop D, Open G, DADGAD); common chords, open-position fingerings
 - Musical events (note, chord, rest) and sequences with tempo/time signature
 - Real-time harmonic monitor with chord/field detection and per-note context
 - MIDI 1.0 parser (running status, SysEx) and stateless dispatcher
@@ -52,7 +52,7 @@ Tiers auto-select based on platform, or override with `#define GINGODUINO_TIER N
 - Chord comparison: 17 dimensions including Neo-Riemannian transforms and Forte vectors
 - Fixed-size arrays, no dynamic allocation, PROGMEM support
 - Compatible with Arduino IDE, PlatformIO, and ESP-IDF
-- 384 native tests passing
+- 409 native tests passing
 
 ### Installation
 
@@ -200,23 +200,45 @@ field.signature();                     // 0
 
 #### GingoFretboard
 ```cpp
-GingoFretboard guitar = GingoFretboard::violao();   // 6 strings, 19 frets
-// Also: ::cavaquinho(), ::bandolim(), ::ukulele()
+// Standard instruments
+GingoFretboard guitar = GingoFretboard::guitar();   // 6 strings, E A D G B E
+GingoFretboard viol   = GingoFretboard::violao();   // same tuning, Portuguese alias
+// Also: ::cavaquinho(), ::mandolin(), ::bandolim(), ::ukulele()
 
-guitar.noteAt(0, 5);                  // GingoNote("A") — string 0, fret 5
-guitar.midiAt(0, 0);                  // 40 (E2)
+// Alternate tunings
+GingoFretboard dd = GingoFretboard::dropD();   // D A D G B E
+GingoFretboard og = GingoFretboard::openG();   // D G D G B D
+GingoFretboard dg = GingoFretboard::dadgad();  // D A D G A D
+
+// Retune a single string
+guitar.setString(0, 38);   // lower string 0 to D2 (drop D by hand)
+
+// Note / MIDI lookup
+guitar.noteAt(0, 5);        // GingoNote("A") — string 0, fret 5
+guitar.midiAt(0, 0);        // 40 (E2)
 
 GingoFretPos positions[48];
 guitar.positions(GingoNote("E"), positions, 48);
 guitar.scalePositions(scale, positions, 48, 0, 4);
 
+// Fingerings
 GingoFingering fg;
-guitar.fingering(GingoChord("CM"), 0, fg); // best fingering at position 0
+guitar.fingering(GingoChord("CM"), 0, fg);       // fingering at position 0
 
 GingoFingering fgs[5];
-guitar.fingerings(GingoChord("CM"), fgs, 5); // up to 5 fingerings
+guitar.fingerings(GingoChord("CM"), fgs, 5);     // up to 5 fingerings, sorted by score
 
-GingoFretboard capo2 = guitar.capo(2);      // transposed fretboard
+// Open-position shapes only (open string + frets 1-4)
+GingoFingering opens[5];
+guitar.openFingerings(GingoChord("GM"), opens, 5);
+guitar.isOpenFingering(opens[0]);                // true
+
+// Common chords for a scale (best fingering per degree)
+GingoFingering ccs[7];
+guitar.commonChords(GingoScale("G", SCALE_MAJOR), ccs, 7);
+// ccs[]: GM, Am, Bm, CM, DM, Em, F#dim — sorted by field degree
+
+GingoFretboard capo2 = guitar.capo(2);           // transposed fretboard
 ```
 
 #### GingoEvent & GingoSequence (Tier 3)
@@ -478,7 +500,7 @@ Tiers auto-detectados por plataforma, ou force com `#define GINGODUINO_TIER N`.
 - Analise de campo harmonico com funcoes T/S/D e roles (+ deduce a partir de notas/acordes)
 - Arvore harmonica (grafo dirigido, major/minor, tradicoes classica + jazz)
 - Analise de progressao: identify, deduce (ranked), predict (proximo branch)
-- Engine de braco: violao, cavaquinho, bandolim, ukulele com scoring de digitacao
+- Engine de braco: guitar/violao, cavaquinho, mandolin/bandolim, ukulele; afinacoes alternativas (Drop D, Open G, DADGAD); acordes comuns, digitacoes em primeira posicao
 - Eventos musicais (nota, acorde, pausa) e sequencias com tempo/compasso
 - Monitor harmonico em tempo real com deteccao de acordes/campos e contexto por nota
 - Parser MIDI 1.0 (running status, SysEx) e dispatcher stateless
@@ -487,7 +509,7 @@ Tiers auto-detectados por plataforma, ou force com `#define GINGODUINO_TIER N`.
 - Comparacao de acordes: 17 dimensoes incluindo transformacoes Neo-Riemannian e vetores Forte
 - Arrays de tamanho fixo, sem alocacao dinamica, suporte PROGMEM
 - Compativel com Arduino IDE, PlatformIO e ESP-IDF
-- 384 testes nativos passando
+- 409 testes nativos passando
 
 ### Instalacao
 
