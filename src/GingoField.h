@@ -12,8 +12,10 @@
 
 #include "gingoduino_types.h"
 #include "GingoNote.h"
+#include "GingoInterval.h"
 #include "GingoChord.h"
 #include "GingoScale.h"
+#include "GingoNoteContext.h"
 
 namespace gingoduino {
 
@@ -84,6 +86,9 @@ public:
 
     /// Number of degrees.
     uint8_t size() const { return scale_.size(); }
+
+    /// Per-note harmonic context: degree, interval, function, inScale.
+    GingoNoteContext noteContext(const GingoNote& note) const;
 
     /// Deduce the most probable harmonic fields from a set of notes or chords.
     /// Items can be note names ("C", "E", "G") or chord names ("CM", "Dm", "G7").

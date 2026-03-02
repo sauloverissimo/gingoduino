@@ -61,5 +61,24 @@
 #if GINGODUINO_HAS_PROGRESSION
   #include "GingoProgression.h"
 #endif
+#if GINGODUINO_HAS_COMPARISON
+  #include "GingoChordComparison.h"
+#endif
+
+// Tier 2+: NoteContext, Monitor, MIDI1 (needs Field)
+#if GINGODUINO_HAS_FIELD
+  #include "GingoNoteContext.h"
+#endif
+#if GINGODUINO_HAS_MONITOR
+  #include "GingoMonitor.h"
+#endif
+#if GINGODUINO_HAS_MIDI1
+  #include "GingoMIDI1.h"
+#endif
+
+// Tier 3: MIDI2 UMP / MIDI-CI (needs Sequence)
+#if GINGODUINO_HAS_MIDI2
+  #include "GingoMIDI2.h"
+#endif
 
 #endif // GINGODUINO_H

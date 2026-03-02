@@ -7,6 +7,7 @@
 **Music Theory Engine for Embedded Systems** | **Biblioteca de Teoria Musical para Sistemas Embarcados**
 
 <p align="center">
+  <a href="https://github.com/sauloverissimo/gingoduino/actions/workflows/ci.yml"><img src="https://github.com/sauloverissimo/gingoduino/actions/workflows/ci.yml/badge.svg" alt="Native Tests"></a>
   <a href="https://www.arduino.cc/reference/en/libraries/gingoduino/"><img src="https://img.shields.io/badge/Arduino-compatible-00878F?logo=arduino&logoColor=white" alt="Arduino"></a>
   <a href="https://registry.platformio.org/libraries/sauloverissimo/Gingoduino"><img src="https://img.shields.io/badge/PlatformIO-compatible-FF7F00?logo=platformio&logoColor=white" alt="PlatformIO"></a>
   <a href="https://github.com/sauloverissimo/gingoduino"><img src="https://img.shields.io/badge/ESP--IDF-compatible-E7352C?logo=espressif&logoColor=white" alt="ESP-IDF"></a>
