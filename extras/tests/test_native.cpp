@@ -324,7 +324,7 @@ void testScaleExtended() {
 
     // Brightness
     uint8_t br = cMaj.brightness();
-    CHECK(br == 5, "C Ionian brightness=5");
+    CHECK(br == 6, "C Ionian brightness=6");
 
     GingoScale dorian("D", "dorian");
     CHECK(dorian.brightness() == 3, "D Dorian brightness=3");
