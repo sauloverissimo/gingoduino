@@ -43,20 +43,20 @@ struct EnharmonicEntry {
 // Sorted alphabetically by input for binary search.
 // Unicode entries (♭) omitted — embedded uses ASCII notation.
 static const EnharmonicEntry ENHARMONIC_MAP[] PROGMEM = {
-    {"#B",  "C" }, {"#E",  "F" },
     {"##A", "B" }, {"##B", "C#"}, {"##C", "D" }, {"##D", "E" },
     {"##E", "F#"}, {"##F", "G" }, {"##G", "A" },
+    {"#B",  "C" }, {"#E",  "F" },
     {"A##", "B" }, {"Ab",  "G#"}, {"Abb", "G" },
-    {"B##", "C#"}, {"B#",  "C" }, {"Bb",  "A#"}, {"Bbb", "A" },
-    {"C##", "D" }, {"Cb",  "B" }, {"Cbb", "B" },
+    {"B#",  "C" }, {"B##", "C#"}, {"Bb",  "A#"}, {"Bbb", "A" },
+    {"C##", "D" }, {"Cb",  "B" }, {"Cbb", "A#"},
     {"D##", "E" }, {"Db",  "C#"}, {"Dbb", "C" },
-    {"E##", "F#"}, {"E#",  "F" }, {"Eb",  "D#"}, {"Ebb", "D" },
-    {"F##", "G" }, {"Fb",  "E" }, {"Fbb", "E" },
+    {"E#",  "F" }, {"E##", "F#"}, {"Eb",  "D#"}, {"Ebb", "D" },
+    {"F##", "G" }, {"Fb",  "E" }, {"Fbb", "D#"},
     {"G##", "A" }, {"Gb",  "F#"}, {"Gbb", "F" },
     {"bA",  "G#"}, {"bB",  "A#"}, {"bC",  "B" },
     {"bD",  "C#"}, {"bE",  "D#"}, {"bF",  "E" }, {"bG",  "F#"},
-    {"bbA", "G" }, {"bbB", "A" }, {"bbC", "B" },
-    {"bbD", "C" }, {"bbE", "D" }, {"bbF", "E" }, {"bbG", "F" },
+    {"bbA", "G" }, {"bbB", "A" }, {"bbC", "A#"},
+    {"bbD", "C" }, {"bbE", "D" }, {"bbF", "D#"}, {"bbG", "F" },
 };
 
 static const uint8_t ENHARMONIC_MAP_SIZE = sizeof(ENHARMONIC_MAP) / sizeof(ENHARMONIC_MAP[0]);
@@ -93,7 +93,7 @@ static const IntervalData INTERVAL_TABLE[24] PROGMEM = {
     /* 15*/ {"#9",  "mi10", 10, 2},
     /* 16*/ {"b11", "ma10", 10, 2},
     /* 17*/ {"11",  "P11",  11, 2},
-    /* 18*/ {"#11", "d11",  11, 2},
+    /* 18*/ {"#11", "A11",  11, 2},
     /* 19*/ {"5",   "P12",  12, 2},
     /* 20*/ {"b13", "mi13", 13, 2},
     /* 21*/ {"13",  "ma13", 13, 2},
@@ -349,9 +349,9 @@ static const uint8_t DURATION_NAMES_SIZE = sizeof(DURATION_NAMES) / sizeof(DURAT
 
 #if GINGODUINO_HAS_FIELD
 
-// Harmonic functions for Major scale degrees 1-7: T S D T S T D
+// Harmonic functions for Major scale degrees 1-7: T S T S D T D
 static const uint8_t HARMONIC_FUNCTIONS_MAJOR[7] PROGMEM = {
-    0, 1, 2, 0, 2, 0, 2  // T, S, D, T, D, T, D
+    0, 1, 0, 1, 2, 0, 2  // T, S, T, S, D, T, D
 };
 
 // Role names (index by degree-1 for major)
@@ -391,7 +391,7 @@ static const char* const MODE_NAMES_MAJOR[7] PROGMEM = {
 
 // Brightness values for Major modes (1=Locrian, 7=Lydian)
 static const uint8_t MODE_BRIGHTNESS_MAJOR[7] PROGMEM = {
-    5, 3, 1, 7, 6, 2, 0  // Ionian=5, Dorian=3, Phrygian=1, Lydian=7, ...
+    6, 3, 1, 7, 5, 2, 0  // Ionian=6, Dorian=3, Phrygian=1, Lydian=7, Mixolydian=5, ...
 };
 
 // Mode names for Harmonic Minor (7 modes)

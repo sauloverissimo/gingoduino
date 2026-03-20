@@ -124,15 +124,17 @@ uint16_t GingoScale::computeMask12() const {
 
     // Apply pentatonic filter if needed
     if (pentatonic_) {
-        // Keep only degrees 1, 2, 3, 5, 6 (skip 4 and 7)
-        // This means keep the 1st, 2nd, 3rd, 5th, 6th active notes
+        // Major pentatonic: degrees 1, 2, 3, 5, 6 (skip 4 and 7)
+        // Minor pentatonic: degrees 1, 3, 4, 5, 7 (skip 2 and 6)
+        bool isMinor = (mask12 & (1 << 3)) && !(mask12 & (1 << 4));
+        uint8_t skip_a = isMinor ? 2 : 4;
+        uint8_t skip_b = isMinor ? 6 : 7;
         uint16_t filtered = 0;
         uint8_t active = 0;
         for (uint8_t i = 0; i < 12; i++) {
             if (mask12 & (1 << i)) {
                 active++;
-                // Keep notes 1, 2, 3, 5, 6 — skip 4 and 7
-                if (active != 4 && active != 7) {
+                if (active != skip_a && active != skip_b) {
                     filtered |= (1 << i);
                 }
             }
@@ -257,8 +259,8 @@ int8_t GingoScale::signature() const {
 
     int8_t pos = (int8_t)pgm_read_byte(&FIFTHS_POS[tonic_.semitone()]);
 
-    // Only the 7-note diatonic families have meaningful mode offsets
-    if (parent_ <= SCALE_MELODIC_MINOR && modeNumber_ >= 1 && modeNumber_ <= 7) {
+    // Mode offsets only apply to the Major family (diatonic modes)
+    if (parent_ == SCALE_MAJOR && modeNumber_ >= 1 && modeNumber_ <= 7) {
         pos += (int8_t)pgm_read_byte(&MODE_FIFTHS_OFFSET[modeNumber_ - 1]);
     }
 
@@ -279,11 +281,11 @@ GingoScale GingoScale::relative() const {
 GingoScale GingoScale::parallel() const {
     const char* q = quality();
     if (strcmp(q, "major") == 0) {
-        // Parallel minor: same tonic, aeolian mode of parent
-        return GingoScale(tonic_.name(), parent_, 6, pentatonic_);
+        // Parallel minor: same tonic, natural minor
+        return GingoScale(tonic_.name(), SCALE_MAJOR, 6, pentatonic_);
     }
-    // Parallel major: same tonic, ionian mode of parent
-    return GingoScale(tonic_.name(), parent_, 1, pentatonic_);
+    // Parallel major: same tonic, ionian
+    return GingoScale(tonic_.name(), SCALE_MAJOR, 1, pentatonic_);
 }
 
 uint8_t GingoScale::degreeOf(const GingoNote& note) const {
