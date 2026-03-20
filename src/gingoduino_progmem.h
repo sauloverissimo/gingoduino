@@ -110,23 +110,23 @@ static const IntervalData INTERVAL_TABLE[24] PROGMEM = {
 
 static const uint32_t SCALE_MASKS[10] PROGMEM = {
     // Major:          P1 . 2M .  3M 4J .  5J .  M6 .  7M | .  .  9  .  .  11 .  .  .  13 .  .
-    0b00000000001000100010101010110101UL,  // 0 Major
+    0b00000000001000100100101010110101UL,  // 0 Major
     // NatMinor:       P1 . 2M 3m .  4J .  5J #5 .  7m .  | .  .  9  .  .  11 .  .  b13 .  .  .
-    0b00000000000101000010101011010101UL,  // 1 Natural minor
+    0b00000000000100100100010110101101UL,  // 1 Natural minor
     // HarmMinor:      P1 . 2M 3m .  4J .  5J #5 .  .  7M | .  .  9  .  .  11 .  .  .  13 .  .
-    0b00000000001000100010100011010101UL,  // 2 Harmonic minor
+    0b00000000001000100100100110101101UL,  // 2 Harmonic minor
     // MelodicMinor:   P1 . 2M 3m .  4J .  5J .  M6 .  7M | .  .  9  .  .  11 .  .  .  13 .  .
-    0b00000000001000100010101010010101UL,  // 3 Melodic minor
+    0b00000000001000100100101010101101UL,  // 3 Melodic minor
     // Diminished:     P1 . 2M 3m .  4J d5 .  #5 .  7m 7M | .  .  9  .  .  11 .  .  .  13 .  .
-    0b00000000001000100010110001110101UL,  // 4 Diminished
+    0b00000000001000100100101101101101UL,  // 4 Diminished
     // HarmonicMajor:  P1 . 2M .  3M 4J .  5J #5 .  .  7M | .  .  9  .  .  11 .  .  .  13 .  .
-    0b00000000001000100010100110110101UL,  // 5 Harmonic major
+    0b00000000001000100100100110110101UL,  // 5 Harmonic major
     // WholeTone:      P1 . 2M .  3M .  d5 .  #5 .  7m .  | .  .  9  .  .  .  #11 .  .  13 .  .
-    0b00000000001001000000010101010101UL,  // 6 Whole tone
+    0b00000000001001000100010101010101UL,  // 6 Whole tone
     // Augmented:      P1 .  .  3m 3M .  .  5J #5 .  .  7M | .  .  .  #9 .  .  .  5  .  .  #13 .
-    0b00000000010010000010000110011001UL,  // 7 Augmented
+    0b00000000010010001000100110011001UL,  // 7 Augmented
     // Blues:          P1 .  .  3m .  4J d5 5J .  .  7m .  | .  .  .  #9 .  11 #11 .  .  .  #13 .
-    0b00000000010011000010000011101001UL,  // 8 Blues
+    0b00000000010001101000010011101001UL,  // 8 Blues
     // Chromatic:      all bits set
     0b00000000111111111111111111111111UL,  // 9 Chromatic
 };
