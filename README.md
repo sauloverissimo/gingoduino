@@ -378,10 +378,6 @@ GingoChordComparison::transformationName(cmp.transformation, buf, sizeof(buf));
 
 Interactive demo on LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI) with real-time audio synthesis via I2S DAC.
 
-<p align="center">
-  <img src="examples/TDisplayS3Explorer/images/tdisplay6.jpeg" alt="T-Display S3 with MIDI Shield" width="520">
-</p>
-
 **Setup:** Install TFT_eSPI, configure for T-Display S3 (`Setup206_LilyGo_T_Display_S3.h`).
 
 **Navigation:** BOOT = switch page, KEY = cycle items.
@@ -580,10 +576,6 @@ void loop() {}
 #### T-Display S3 Explorer
 
 Demo interativo no LilyGo T-Display S3 (ESP32-S3, 170x320 TFT, TFT_eSPI) com sintese de audio em tempo real via I2S DAC.
-
-<p align="center">
-  <img src="examples/TDisplayS3Explorer/images/tdisplay6.jpeg" alt="T-Display S3 com MIDI Shield" width="520">
-</p>
 
 **Setup:** Instale TFT_eSPI, configure para T-Display S3 (`Setup206_LilyGo_T_Display_S3.h`).
 
