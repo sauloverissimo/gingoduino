@@ -269,10 +269,14 @@ seq.transpose(5);   // transpose all events
 ```cpp
 GingoMonitor monitor;
 
-// Feed MIDI events
-monitor.noteOn(60, 100);   // C4, velocity 100
-monitor.noteOn(64, 100);   // E4
-monitor.noteOn(67, 100);   // G4
+// Feed MIDI events (channel 0-15, UMP convention)
+monitor.noteOn(0, 60, 100);   // channel 0, C4, velocity 100
+monitor.noteOn(0, 64, 100);   // channel 0, E4
+monitor.noteOn(0, 67, 100);   // channel 0, G4
+
+// Channel filter (0-15 = specific channel, 0xFF = all channels)
+monitor.setChannel(0xFF);  // accept all channels (default)
+monitor.setChannel(0);     // only channel 0
 
 // Poll state
 monitor.hasChord();         // true
@@ -307,12 +311,15 @@ monitor.onNoteOn([](const GingoNoteContext& ctx) {
 GingoMonitor monitor;
 
 // Stateless dispatch (pre-parsed messages)
-GingoMIDI1::dispatch(0x90, 60, 100, monitor);  // Note On C4
-GingoMIDI1::dispatch(0x80, 60, 0, monitor);    // Note Off C4
-GingoMIDI1::dispatch(0xB0, 64, 127, monitor);  // Sustain On
-GingoMIDI1::dispatch(0xB0, 123, 0, monitor);   // All Notes Off
+// Status byte lower nibble = channel 0-15 (e.g. 0x90 = NoteOn ch0, 0x91 = NoteOn ch1)
+// Note: Arduino MIDI Library uses 1-16; subtract 1 before passing status bytes.
+GingoMIDI1::dispatch(0x90, 60, 100, monitor);  // Note On ch0, C4, vel 100
+GingoMIDI1::dispatch(0x80, 60, 0, monitor);    // Note Off ch0, C4
+GingoMIDI1::dispatch(0xB0, 64, 127, monitor);  // Sustain On ch0
+GingoMIDI1::dispatch(0xB0, 123, 0, monitor);   // All Notes Off ch0
 
 // Stateful byte stream parser (handles running status, SysEx, real-time)
+// Channel extracted automatically as 0-15 from status byte.
 GingoMIDI1Parser parser;
 while (Serial1.available()) {
     parser.feed((uint8_t)Serial1.read(), monitor);
@@ -418,14 +425,14 @@ GingoEvent e = GingoEvent::noteEvent(
     GingoDuration("quarter"),
     4,      // octave
     100,    // velocity (0-127)
-    1       // MIDI channel (1-16)
+    0       // MIDI channel (0-15, UMP convention)
 );
 
 // Access and modify
 e.velocity();           // 100
 e.setVelocity(64);
-e.midiChannel();        // 1
-e.setMidiChannel(2);
+e.midiChannel();        // 0
+e.setMidiChannel(1);
 
 // Serialize to raw MIDI bytes
 uint8_t buf[6];
@@ -597,10 +604,14 @@ Páginas adicionais: **Harmonic Field** (tríades, funções T/S/D, tétrades) e
 ```cpp
 GingoMonitor monitor;
 
-// Alimentar eventos MIDI
-monitor.noteOn(60, 100);   // C4, velocity 100
-monitor.noteOn(64, 100);   // E4
-monitor.noteOn(67, 100);   // G4
+// Alimentar eventos MIDI (channel 0-15, convencao UMP)
+monitor.noteOn(0, 60, 100);   // channel 0, C4, velocity 100
+monitor.noteOn(0, 64, 100);   // channel 0, E4
+monitor.noteOn(0, 67, 100);   // channel 0, G4
+
+// Filtro de channel (0-15 = channel especifico, 0xFF = todos)
+monitor.setChannel(0xFF);  // aceita todos os channels (default)
+monitor.setChannel(0);     // apenas channel 0
 
 // Consultar estado
 monitor.hasChord();         // true
@@ -635,12 +646,15 @@ monitor.onNoteOn([](const GingoNoteContext& ctx) {
 GingoMonitor monitor;
 
 // Dispatch stateless (mensagens pre-parseadas)
-GingoMIDI1::dispatch(0x90, 60, 100, monitor);  // Note On C4
-GingoMIDI1::dispatch(0x80, 60, 0, monitor);    // Note Off C4
-GingoMIDI1::dispatch(0xB0, 64, 127, monitor);  // Sustain On
-GingoMIDI1::dispatch(0xB0, 123, 0, monitor);   // All Notes Off
+// Nibble inferior do status byte = channel 0-15 (ex: 0x90 = NoteOn ch0, 0x91 = NoteOn ch1)
+// Nota: Arduino MIDI Library usa 1-16; subtraia 1 antes de passar o status byte.
+GingoMIDI1::dispatch(0x90, 60, 100, monitor);  // Note On ch0, C4, vel 100
+GingoMIDI1::dispatch(0x80, 60, 0, monitor);    // Note Off ch0, C4
+GingoMIDI1::dispatch(0xB0, 64, 127, monitor);  // Sustain On ch0
+GingoMIDI1::dispatch(0xB0, 123, 0, monitor);   // All Notes Off ch0
 
 // Parser stateful de byte stream (running status, SysEx, real-time)
+// Channel extraido automaticamente como 0-15 do status byte.
 GingoMIDI1Parser parser;
 while (Serial1.available()) {
     parser.feed((uint8_t)Serial1.read(), monitor);
@@ -713,14 +727,14 @@ GingoEvent e = GingoEvent::noteEvent(
     GingoDuration("quarter"),
     4,      // octave
     100,    // velocity (0-127)
-    1       // MIDI channel (1-16)
+    0       // MIDI channel (0-15, UMP convention)
 );
 
 // Acessar e modificar
 e.velocity();           // 100
 e.setVelocity(64);
-e.midiChannel();        // 1
-e.setMidiChannel(2);
+e.midiChannel();        // 0
+e.setMidiChannel(1);
 
 // Serializar para bytes MIDI raw
 uint8_t buf[6];

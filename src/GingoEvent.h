@@ -34,13 +34,13 @@ enum EventType : uint8_t {
 ///   e.note().name();   // "C"
 ///   e.midiNumber();    // 60
 ///   e.velocity();      // 100 (default)
-///   e.midiChannel();   // 1 (default)
+///   e.midiChannel();   // 0 (default, UMP convention)
 ///
 ///   auto r = GingoEvent::rest(GingoDuration("half"));
 ///   r.type();          // EVENT_REST
 class GingoEvent {
 public:
-    /// Default constructor (quarter-note rest, velocity 100, channel 1).
+    /// Default constructor (quarter-note rest, velocity 100, channel 0).
     GingoEvent();
 
     /// Factory: create a note event with optional velocity and channel.
@@ -48,14 +48,14 @@ public:
                                 const GingoDuration& duration,
                                 uint8_t octave = 4,
                                 uint8_t velocity = 100,
-                                uint8_t midiChannel = 1);
+                                uint8_t midiChannel = 0);
 
     /// Factory: create a chord event with optional velocity and channel.
     static GingoEvent chordEvent(const GingoChord& chord,
                                  const GingoDuration& duration,
                                  uint8_t octave = 4,
                                  uint8_t velocity = 100,
-                                 uint8_t midiChannel = 1);
+                                 uint8_t midiChannel = 0);
 
     /// Factory: create a rest event.
     static GingoEvent rest(const GingoDuration& duration);
@@ -66,7 +66,7 @@ public:
     static GingoEvent fromMIDI(uint8_t midiNote,
                                const GingoDuration& duration = GingoDuration("quarter"),
                                uint8_t velocity = 100,
-                               uint8_t midiChannel = 1);
+                               uint8_t midiChannel = 0);
 
     /// The event type.
     EventType type() const { return type_; }
@@ -86,14 +86,14 @@ public:
     /// MIDI velocity (0-127, default 100).
     uint8_t velocity() const { return velocity_; }
 
-    /// MIDI channel (1-16, default 1).
+    /// MIDI channel (0-15, UMP convention, default 0).
     uint8_t midiChannel() const { return midiChannel_; }
 
     /// Set velocity (clamped to 0-127).
     void setVelocity(uint8_t v) { velocity_ = v & 0x7F; }
 
-    /// Set MIDI channel (clamped to 1-16, defaults to 1 if invalid).
-    void setMidiChannel(uint8_t ch) { midiChannel_ = (ch > 0 && ch <= 16) ? ch : 1; }
+    /// Set MIDI channel (clamped to 0-15, UMP convention).
+    void setMidiChannel(uint8_t ch) { midiChannel_ = ch & 0x0F; }
 
     /// MIDI number of the note (EVENT_NOTE) or chord root (EVENT_CHORD).
     uint8_t midiNumber() const;
@@ -118,7 +118,7 @@ private:
     GingoDuration duration_;
     uint8_t      octave_;
     uint8_t      velocity_;      // MIDI velocity (0-127)
-    uint8_t      midiChannel_;   // MIDI channel (1-16)
+    uint8_t      midiChannel_;   // MIDI channel (0-15, UMP convention)
 };
 
 } // namespace gingoduino

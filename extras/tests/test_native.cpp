@@ -671,22 +671,22 @@ void testMIDI() {
     uint8_t restWritten = rest.toMIDI(midiBuffer);
     CHECK(restWritten == 0, "rest toMIDI writes 0 bytes");
 
-    // Test velocity and channel customization
+    // Test velocity and channel customization (channels are 0-15, UMP convention)
     GingoEvent eVel = GingoEvent::noteEvent(GingoNote("C"), GingoDuration("quarter"), 4, 64, 2);
     CHECK(eVel.velocity() == 64, "custom velocity=64");
     CHECK(eVel.midiChannel() == 2, "custom channel=2");
     eVel.toMIDI(midiBuffer);
-    CHECK(midiBuffer[0] == 0x91, "channel 2 = 0x90 | 1 = 0x91");
+    CHECK(midiBuffer[0] == 0x92, "channel 2 = 0x90 | 2 = 0x92");
     CHECK(midiBuffer[2] == 64, "velocity=64");
 
     // Test setVelocity/setMidiChannel
     GingoEvent eMod = GingoEvent::noteEvent(GingoNote("E"), GingoDuration("eighth"), 4);
     eMod.setVelocity(127);
-    eMod.setMidiChannel(16);
+    eMod.setMidiChannel(15);
     CHECK(eMod.velocity() == 127, "setVelocity(127)");
-    CHECK(eMod.midiChannel() == 16, "setMidiChannel(16)");
+    CHECK(eMod.midiChannel() == 15, "setMidiChannel(15)");
     eMod.toMIDI(midiBuffer);
-    CHECK(midiBuffer[0] == 0x9F, "channel 16 = 0x90 | 15 = 0x9F");
+    CHECK(midiBuffer[0] == 0x9F, "channel 15 = 0x90 | 15 = 0x9F");
     CHECK(midiBuffer[2] == 127, "velocity=127");
 
     // GingoSequence::toMIDI
@@ -696,10 +696,10 @@ void testMIDI() {
     seq.add(GingoEvent::rest(GingoDuration("half")));
 
     uint8_t seqBuffer[32];
-    uint16_t seqWritten = seq.toMIDI(seqBuffer, sizeof(seqBuffer), 1);
+    uint16_t seqWritten = seq.toMIDI(seqBuffer, sizeof(seqBuffer), 0);  // channel 0 (UMP convention)
     CHECK(seqWritten == 12, "sequence with 2 notes toMIDI writes 12 bytes (6+6)");
 
-    // Check specific bytes from first event (C4)
+    // Check specific bytes from first event (C4, channel 0 = 0x90)
     CHECK(seqBuffer[0] == 0x90, "seq[0] NoteOn status");
     CHECK(seqBuffer[1] == 60, "seq[1] C4 note");
     CHECK(seqBuffer[3] == 0x80, "seq[3] NoteOff status");
@@ -1270,12 +1270,12 @@ void testChordComparison() {
 void testMonitor() {
     printf("\n=== GingoMonitor ===\n");
 
-    // Test basic note tracking via polling
+    // Test basic note tracking via polling (channels are 0-15, UMP convention)
     {
         GingoMonitor mon;
-        mon.noteOn(1, 60, 100);  // C4
-        mon.noteOn(1, 64, 100);  // E4
-        mon.noteOn(1, 67, 100);  // G4
+        mon.noteOn(0, 60, 100);  // C4
+        mon.noteOn(0, 64, 100);  // E4
+        mon.noteOn(0, 67, 100);  // G4
         // Should detect CM chord
         CHECK(mon.hasChord(), "3 notes → chord detected");
         CHECK(strcmp(mon.currentChord().name(), "CM") == 0, "C+E+G = CM");
@@ -1284,11 +1284,11 @@ void testMonitor() {
     // Note off removes note, chord may change
     {
         GingoMonitor mon;
-        mon.noteOn(1, 60, 100);  // C
-        mon.noteOn(1, 64, 100);  // E
-        mon.noteOn(1, 67, 100);  // G
+        mon.noteOn(0, 60, 100);  // C
+        mon.noteOn(0, 64, 100);  // E
+        mon.noteOn(0, 67, 100);  // G
         CHECK(mon.hasChord(), "CM detected before noteOff");
-        mon.noteOff(1, 67);  // remove G
+        mon.noteOff(0, 67);  // remove G
         // C+E alone — not enough for a chord
         CHECK(!mon.hasChord(), "C+E alone not a chord");
     }
@@ -1296,11 +1296,11 @@ void testMonitor() {
     // Sustain pedal keeps notes
     {
         GingoMonitor mon;
-        mon.noteOn(1, 60, 100);  // C
-        mon.noteOn(1, 64, 100);  // E
-        mon.noteOn(1, 67, 100);  // G
+        mon.noteOn(0, 60, 100);  // C
+        mon.noteOn(0, 64, 100);  // E
+        mon.noteOn(0, 67, 100);  // G
         mon.sustainOn();
-        mon.noteOff(1, 67);  // G sustained
+        mon.noteOff(0, 67);  // G sustained
         // Chord should still be detected (G is sustained)
         CHECK(mon.hasChord(), "sustain keeps chord");
         CHECK(strcmp(mon.currentChord().name(), "CM") == 0, "sustained chord still CM");
@@ -1311,60 +1311,60 @@ void testMonitor() {
     // Reset clears everything
     {
         GingoMonitor mon;
-        mon.noteOn(1, 60, 100);
-        mon.noteOn(1, 64, 100);
-        mon.noteOn(1, 67, 100);
+        mon.noteOn(0, 60, 100);
+        mon.noteOn(0, 64, 100);
+        mon.noteOn(0, 67, 100);
         CHECK(mon.hasChord(), "chord before reset");
         mon.reset();
         CHECK(!mon.hasChord(), "reset clears chord");
     }
 
-    // Channel filter — setChannel / channel()
+    // Channel filter — setChannel / channel() (0-15, 0xFF = all)
     {
         GingoMonitor mon;
-        mon.setChannel(2);
-        CHECK(mon.channel() == 2, "setChannel(2) stored");
+        mon.setChannel(1);
+        CHECK(mon.channel() == 1, "setChannel(1) stored");
 
-        // Events on channel 2 must pass
-        mon.noteOn(2, 60, 100);
-        mon.noteOn(2, 64, 100);
-        mon.noteOn(2, 67, 100);
-        CHECK(mon.hasChord(), "channel 2 events accepted");
-
-        // Events on channel 1 must be silently ignored
-        mon.reset();
+        // Events on channel 1 must pass
         mon.noteOn(1, 60, 100);
         mon.noteOn(1, 64, 100);
         mon.noteOn(1, 67, 100);
-        CHECK(!mon.hasChord(), "channel 1 events rejected by filter");
+        CHECK(mon.hasChord(), "channel 1 events accepted");
+
+        // Events on channel 0 must be silently ignored
+        mon.reset();
+        mon.noteOn(0, 60, 100);
+        mon.noteOn(0, 64, 100);
+        mon.noteOn(0, 67, 100);
+        CHECK(!mon.hasChord(), "channel 0 events rejected by filter");
     }
 
-    // Channel filter 0 = accept all
+    // Channel filter 0xFF = accept all
     {
         GingoMonitor mon;
-        mon.setChannel(0);
+        mon.setChannel(0xFF);
         mon.noteOn(3, 60, 100);
         mon.noteOn(5, 64, 100);
         mon.noteOn(9, 67, 100);
-        CHECK(mon.hasChord(), "channel filter 0 accepts all channels");
+        CHECK(mon.hasChord(), "channel filter 0xFF accepts all channels");
     }
 
     // noteOff filtered too
     {
         GingoMonitor mon;
-        mon.setChannel(1);
-        mon.noteOn(1, 60, 100);
-        mon.noteOn(1, 64, 100);
-        mon.noteOn(1, 67, 100);
-        CHECK(mon.hasChord(), "noteOff filter test: CM detected ch1");
+        mon.setChannel(0);
+        mon.noteOn(0, 60, 100);
+        mon.noteOn(0, 64, 100);
+        mon.noteOn(0, 67, 100);
+        CHECK(mon.hasChord(), "noteOff filter test: CM detected ch0");
 
         // noteOff on wrong channel must not remove note
-        mon.noteOff(2, 67);
-        CHECK(mon.hasChord(), "noteOff on ch2 ignored, chord remains");
+        mon.noteOff(1, 67);
+        CHECK(mon.hasChord(), "noteOff on ch1 ignored, chord remains");
 
         // noteOff on correct channel removes note
-        mon.noteOff(1, 67);
-        CHECK(!mon.hasChord(), "noteOff on ch1 removes note, chord gone");
+        mon.noteOff(0, 67);
+        CHECK(!mon.hasChord(), "noteOff on ch0 removes note, chord gone");
     }
 
 #if GINGODUINO_TIER >= 3
@@ -1376,8 +1376,8 @@ void testMonitor() {
             (void)ctx;
             noteCount++;
         });
-        mon.noteOn(1, 60, 100);
-        mon.noteOn(1, 64, 100);
+        mon.noteOn(0, 60, 100);
+        mon.noteOn(0, 64, 100);
         CHECK(noteCount == 2, "onNoteOn lambda called 2 times");
 
         bool chordFired = false;
@@ -1385,7 +1385,7 @@ void testMonitor() {
             (void)c;
             chordFired = true;
         });
-        mon.noteOn(1, 67, 100);  // completes CM
+        mon.noteOn(0, 67, 100);  // completes CM
         CHECK(chordFired, "onChordDetected lambda fired");
     }
 #endif
