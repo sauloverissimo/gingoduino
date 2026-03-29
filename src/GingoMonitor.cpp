@@ -16,7 +16,7 @@ namespace gingoduino {
 // ---------------------------------------------------------------------------
 
 GingoMonitor::GingoMonitor()
-    : channelFilter_(0)
+    : channelFilter_(0xFF)
     , heldCount_(0)
     , sustainHeld_(false)
     , chordValid_(false)
@@ -184,7 +184,7 @@ void GingoMonitor::analyse_() {
 // ---------------------------------------------------------------------------
 
 void GingoMonitor::noteOn(uint8_t channel, uint8_t midiNum, uint8_t velocity) {
-    if (channelFilter_ != 0 && channel != channelFilter_) return;
+    if (channelFilter_ != 0xFF && channel != channelFilter_) return;
     (void)velocity;
 
     // Add note (avoid duplicates); re-analyse only if new
@@ -221,7 +221,7 @@ void GingoMonitor::noteOn(uint8_t channel, uint8_t midiNum, uint8_t velocity) {
 }
 
 void GingoMonitor::noteOff(uint8_t channel, uint8_t midiNum) {
-    if (channelFilter_ != 0 && channel != channelFilter_) return;
+    if (channelFilter_ != 0xFF && channel != channelFilter_) return;
     if (sustainHeld_) {
         // Mark note as sustained instead of removing
         for (uint8_t i = 0; i < heldCount_; i++) {

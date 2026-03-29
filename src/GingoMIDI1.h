@@ -66,7 +66,8 @@ class GingoMIDI1 {
 public:
     /// Dispatch a pre-parsed MIDI 1.0 message to a GingoMonitor.
     ///
-    /// @param status  Status byte (e.g. 0x90, 0x80, 0xB0). Channel nibble ignored.
+    /// @param status  Status byte (e.g. 0x90, 0x80, 0xB0). Channel nibble extracted as 0-15.
+    ///                Note: Arduino MIDI Library callbacks use 1-16; subtract 1 before calling.
     /// @param data1   First data byte (note number or CC number).
     /// @param data2   Second data byte (velocity or CC value).
     /// @param mon     GingoMonitor to receive the routed event.
@@ -74,7 +75,7 @@ public:
     static bool dispatch(uint8_t status, uint8_t data1, uint8_t data2,
                          GingoMonitor& mon) {
         uint8_t type = status & 0xF0;
-        uint8_t ch   = (status & 0x0F) + 1;  // MIDI channel 1–16
+        uint8_t ch   = (status & 0x0F);  // MIDI channel 0–15 (UMP convention)
 
         // Note On — vel=0 treated as Note Off (running-status convention)
         if (type == 0x90) {

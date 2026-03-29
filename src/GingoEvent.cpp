@@ -10,7 +10,7 @@
 namespace gingoduino {
 
 GingoEvent::GingoEvent()
-    : type_(EVENT_REST), octave_(4), velocity_(100), midiChannel_(1)
+    : type_(EVENT_REST), octave_(4), velocity_(100), midiChannel_(0)
 {}
 
 GingoEvent GingoEvent::noteEvent(const GingoNote& note,
@@ -24,7 +24,7 @@ GingoEvent GingoEvent::noteEvent(const GingoNote& note,
     e.duration_ = duration;
     e.octave_ = octave;
     e.velocity_ = velocity & 0x7F;
-    e.midiChannel_ = (midiChannel > 0 && midiChannel <= 16) ? midiChannel : 1;
+    e.midiChannel_ = midiChannel & 0x0F;
     return e;
 }
 
@@ -39,7 +39,7 @@ GingoEvent GingoEvent::chordEvent(const GingoChord& chord,
     e.duration_ = duration;
     e.octave_ = octave;
     e.velocity_ = velocity & 0x7F;
-    e.midiChannel_ = (midiChannel > 0 && midiChannel <= 16) ? midiChannel : 1;
+    e.midiChannel_ = midiChannel & 0x0F;
     return e;
 }
 
@@ -94,7 +94,7 @@ uint8_t GingoEvent::toMIDI(uint8_t* buf) const {
     }
 
     uint8_t noteNum = midiNumber();
-    uint8_t status = 0x90 | ((midiChannel_ - 1) & 0x0F);  // NoteOn status byte
+    uint8_t status = 0x90 | (midiChannel_ & 0x0F);  // NoteOn status byte
 
     // NoteOn: [status, note, velocity]
     buf[0] = status;
@@ -102,7 +102,7 @@ uint8_t GingoEvent::toMIDI(uint8_t* buf) const {
     buf[2] = velocity_;
 
     // NoteOff: [status, note, 0]
-    buf[3] = 0x80 | ((midiChannel_ - 1) & 0x0F);
+    buf[3] = 0x80 | (midiChannel_ & 0x0F);
     buf[4] = noteNum;
     buf[5] = 0;
 

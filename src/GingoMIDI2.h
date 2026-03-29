@@ -233,7 +233,7 @@ public:
         // Word 0: [MT][Group][Status byte][Data1][Data2]
         if (mt == 0x2) {
             uint8_t opcode = (uint8_t)((words[0] >> 20) & 0xF);
-            uint8_t ch     = (uint8_t)((words[0] >> 16) & 0xF) + 1;  // channel 1–16
+            uint8_t ch     = (uint8_t)((words[0] >> 16) & 0xF);  // channel 0–15 (UMP convention)
             uint8_t data1  = (uint8_t)((words[0] >>  8) & 0x7F);
             uint8_t data2  = (uint8_t)(words[0] & 0x7F);
 
@@ -252,7 +252,7 @@ public:
         // Word 1: [Value 32-bit]
         if (mt == 0x4) {
             uint8_t opcode = (uint8_t)((words[0] >> 20) & 0xF);
-            uint8_t ch     = (uint8_t)((words[0] >> 16) & 0xF) + 1;  // channel 1–16
+            uint8_t ch     = (uint8_t)((words[0] >> 16) & 0xF);  // channel 0–15 (UMP convention)
             uint8_t index  = (uint8_t)((words[0] >>  8) & 0x7F);
 
             // Note On/Off

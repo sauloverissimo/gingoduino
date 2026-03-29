@@ -91,8 +91,8 @@ public:
     // Channel filter
     // ------------------------------------------------------------------
 
-    /// Set the MIDI channel filter (1–16). Pass 0 to accept all channels (default).
-    /// A Monitor with setChannel(1) only processes events from MIDI channel 1.
+    /// Set the MIDI channel filter (0-15, UMP convention). Pass 0xFF to accept
+    /// all channels (default). Example: setChannel(0) filters to channel 0.
     void setChannel(uint8_t ch) { channelFilter_ = ch; }
 
     /// Currently configured channel filter. 0 = all channels accepted.
@@ -135,14 +135,14 @@ public:
 
     /// Process a MIDI Note On event.
     /// Silently ignored if the monitor has a channel filter and channel != filter.
-    /// @param channel   MIDI channel (1–16).
+    /// @param channel   MIDI channel (0-15, UMP convention).
     /// @param midiNum   MIDI note number (0–127).
     /// @param velocity  MIDI velocity (1–127; ignored for state but stored).
     void noteOn(uint8_t channel, uint8_t midiNum, uint8_t velocity = 100);
 
     /// Process a MIDI Note Off event.
     /// Silently ignored if the monitor has a channel filter and channel != filter.
-    /// @param channel  MIDI channel (1–16).
+    /// @param channel  MIDI channel (0-15, UMP convention).
     /// @param midiNum  MIDI note number (0–127).
     void noteOff(uint8_t channel, uint8_t midiNum);
 
@@ -185,7 +185,7 @@ public:
     const GingoField& currentField() const { return field_; }
 
 private:
-    // Channel filter (0 = all channels, 1–16 = specific channel)
+    // Channel filter (0xFF = all channels, 0-15 = specific channel, UMP convention)
     uint8_t channelFilter_;
 
     // Held MIDI note numbers (max 16 simultaneous — practical theory limit)

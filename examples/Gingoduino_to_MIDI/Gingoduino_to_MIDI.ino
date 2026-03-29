@@ -21,7 +21,7 @@ using namespace gingoduino;
 
 // MIDI configuration
 #define MIDI_BAUD     31250
-#define MIDI_CHANNEL  1
+#define MIDI_CHANNEL  0  // Channel 0-15 (UMP convention). 0 = first channel.
 #define MIDI_VELOCITY 100
 
 // Sequence parameters
