@@ -86,7 +86,7 @@ Already listed: https://www.arduino.cc/reference/en/libraries/gingoduino/
 
 | Project | Relationship | Status |
 |---------|-------------|--------|
-| [gingo](https://github.com/sauloverissimo/gingo) | Upstream C++17/Python source | Active |
+| [gingopy](https://github.com/sauloverissimo/gingopy) | Upstream C++17/Python source | Active |
 | [cmidi2](https://github.com/atsushieno/cmidi2) | UMP reference library — zero-conflict verified | External |
 | AM_MIDI2.0Lib | MIDI 2.0 transport for Arduino — complementary | External |
 | LilyGo T-Display-S3 | Hardware target for GUI example | Validated |
