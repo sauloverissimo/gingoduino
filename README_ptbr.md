@@ -386,6 +386,7 @@ Veja [examples/MIDI2_Monitor/MIDI2_Monitor.ino](examples/MIDI2_Monitor/MIDI2_Mon
 | RealtimeChordIdentifier | Identifica acordes a partir de notas simultâneas (entrada USB/BLE) | 3 |
 | MIDI2_Monitor | UART MIDI 1.0 in (parser inline), análise no Monitor, UMP Flex Data out | 3 |
 | Gingoduino_to_MIDI | Constrói uma sequência e serializa via `GingoMIDI1::fromSequence` | 3 |
+| V04_SelfTest | Suite de aceitação on-device dos adaptadores de saída da v0.4.0 | 3 |
 
 ## Testes nativos
 

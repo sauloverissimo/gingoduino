@@ -388,6 +388,7 @@ See [examples/MIDI2_Monitor/MIDI2_Monitor.ino](examples/MIDI2_Monitor/MIDI2_Moni
 | RealtimeChordIdentifier | Identify chords from simultaneous notes (USB/BLE input) | 3 |
 | MIDI2_Monitor | UART MIDI 1.0 in (inline parser), Monitor analysis, UMP Flex Data out | 3 |
 | Gingoduino_to_MIDI | Build a sequence and serialize via `GingoMIDI1::fromSequence` | 3 |
+| V04_SelfTest | On-device acceptance suite for the v0.4.0 output adapters | 3 |
 
 ## Native testing
 
