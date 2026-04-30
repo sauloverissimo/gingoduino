@@ -91,7 +91,7 @@ Tiers are auto-selected based on the target platform. To force a tier, define `G
 - Chord comparison across 17 dimensions, including Neo-Riemannian transforms and Forte vectors
 - Fixed-size arrays, no dynamic allocation, PROGMEM support
 - Compatible with Arduino IDE, PlatformIO, and ESP-IDF
-- 395 native tests passing under `-Wall -Wextra -Werror`
+- 399 native tests passing under `-Wall -Wextra -Werror`
 
 ## Installation
 
@@ -292,10 +292,12 @@ monitor.onNoteOn      ([](const GingoNoteContext& ctx)     { /* ... */ });
 uint8_t buf[6];
 uint8_t n = GingoMIDI1::fromEvent(noteEvent, buf, sizeof(buf));
 
-// Sequence -> MIDI 1.0 byte stream. channel=0 keeps each event's own channel;
-// any other value overrides.
+// Sequence -> MIDI 1.0 byte stream. Default keeps each event's own
+// channel; pass an explicit 0-15 to override every event.
 uint8_t out[256];
-uint16_t total = GingoMIDI1::fromSequence(seq, out, sizeof(out), 0);
+uint16_t total = GingoMIDI1::fromSequence(seq, out, sizeof(out));
+// Or with explicit override:
+uint16_t total2 = GingoMIDI1::fromSequence(seq, out, sizeof(out), 5);
 ```
 
 Input from MIDI 1.0 byte streams is intentionally not in scope. Use any external parser (Arduino MIDI Library, your own, etc.) and call `GingoMonitor` directly. See [examples/MIDI2_Monitor/](examples/MIDI2_Monitor/) for a self-contained inline parser.
@@ -395,7 +397,7 @@ g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra -Werror \
     && ./extras/tests/test_native
 ```
 
-395 tests, 0 failures. No Arduino framework needed.
+399 tests, 0 failures. No Arduino framework needed.
 
 ## License
 

@@ -47,14 +47,13 @@ uint16_t fromSequence(const GingoSequence& seq, uint8_t* buf,
         uint8_t needed = (src.type() == EVENT_REST) ? 0 : 6;
         if (offset + needed > maxLen) break;
 
-        if (channel != 0) {
+        uint8_t cap = (uint8_t)(maxLen - offset > 255 ? 255 : maxLen - offset);
+        if (channel == KEEP_CHANNEL) {
+            offset += fromEvent(src, buf + offset, cap);
+        } else {
             GingoEvent overridden = src;
             overridden.setMidiChannel(channel);
-            offset += fromEvent(overridden, buf + offset,
-                                (uint8_t)(maxLen - offset > 255 ? 255 : maxLen - offset));
-        } else {
-            offset += fromEvent(src, buf + offset,
-                                (uint8_t)(maxLen - offset > 255 ? 255 : maxLen - offset));
+            offset += fromEvent(overridden, buf + offset, cap);
         }
     }
     return offset;

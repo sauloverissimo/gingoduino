@@ -91,7 +91,7 @@ Os tiers são selecionados automaticamente pela plataforma. Para forçar um tier
 - Comparação de acordes em 17 dimensões, incluindo transformações Neo-Riemannianas e vetores Forte
 - Arrays de tamanho fixo, sem alocação dinâmica, suporte a PROGMEM
 - Compatível com Arduino IDE, PlatformIO e ESP-IDF
-- 395 testes nativos passando com `-Wall -Wextra -Werror`
+- 399 testes nativos passando com `-Wall -Wextra -Werror`
 
 ## Instalação
 
@@ -290,10 +290,12 @@ monitor.onNoteOn      ([](const GingoNoteContext& ctx)     { /* ... */ });
 uint8_t buf[6];
 uint8_t n = GingoMIDI1::fromEvent(noteEvent, buf, sizeof(buf));
 
-// Sequência -> stream de bytes MIDI 1.0. channel=0 mantém o canal de cada
-// evento; qualquer outro valor sobrescreve.
+// Sequência -> stream de bytes MIDI 1.0. O default mantém o canal de
+// cada evento; passe um 0-15 explícito pra forçar override em todos.
 uint8_t out[256];
-uint16_t total = GingoMIDI1::fromSequence(seq, out, sizeof(out), 0);
+uint16_t total = GingoMIDI1::fromSequence(seq, out, sizeof(out));
+// Ou com override explícito:
+uint16_t total2 = GingoMIDI1::fromSequence(seq, out, sizeof(out), 5);
 ```
 
 A entrada de byte stream MIDI 1.0 fica intencionalmente fora do escopo. Use qualquer parser externo (Arduino MIDI Library, parser próprio, etc.) e chame `GingoMonitor` direto. Veja [examples/MIDI2_Monitor/](examples/MIDI2_Monitor/) para um parser inline auto-contido.
@@ -393,7 +395,7 @@ g++ -std=c++11 -DGINGODUINO_TIER=3 -I. -Wall -Wextra -Werror \
     && ./extras/tests/test_native
 ```
 
-395 testes, 0 falhas. Sem o framework Arduino.
+399 testes, 0 falhas. Sem o framework Arduino.
 
 ## Licença
 

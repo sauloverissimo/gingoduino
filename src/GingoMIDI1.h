@@ -44,6 +44,10 @@ class GingoSequence;
 
 namespace GingoMIDI1 {
 
+/// Sentinel for fromSequence(): keep the per-event MIDI channel.
+/// Any value 0-15 forces an override on every event in the sequence.
+static const uint8_t KEEP_CHANNEL = 0xFF;
+
 /// Serialize a single GingoEvent to raw MIDI 1.0 bytes.
 /// Writes NoteOn followed by NoteOff. Rests produce 0 bytes.
 /// @param event   Source event.
@@ -58,10 +62,11 @@ uint8_t fromEvent(const GingoEvent& event, uint8_t* buf, uint8_t maxLen);
 /// @param seq      Source sequence.
 /// @param buf      Output buffer.
 /// @param maxLen   Buffer capacity. Stops early when the next event would not fit.
-/// @param channel  Override MIDI channel (0-15). If 0, each event keeps its own channel.
+/// @param channel  Override MIDI channel (0-15). KEEP_CHANNEL (default) keeps
+///                 each event's own channel.
 /// @returns        Total bytes written.
 uint16_t fromSequence(const GingoSequence& seq, uint8_t* buf,
-                      uint16_t maxLen, uint8_t channel = 0);
+                      uint16_t maxLen, uint8_t channel = KEEP_CHANNEL);
 #endif
 
 } // namespace GingoMIDI1

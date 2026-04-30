@@ -14,8 +14,11 @@ Arduino MIDI Library, etc.).
 
 ### Removed (breaking)
 
-- `GingoMIDI1Parser` (running status, SysEx, real-time byte stream parser).
+- `GingoMIDI1Parser` (running status, SysEx absorption, real-time byte
+  pass-through).
 - `GingoMIDI1::dispatch(status, data1, data2, monitor)` (input adapter).
+  Note: `GingoMIDI1` was a class in 0.3.x and is now a namespace; any
+  forward declarations of `class GingoMIDI1;` need to be removed.
 - `GingoMIDI2::dispatch(words, monitor)` (UMP receive dispatch).
 - `GingoMIDICI` namespace (`discoveryRequest`, `profileInquiryReply`,
   `capabilitiesJSON` and the gingoduino MIDI-CI Profile ID).
@@ -91,14 +94,23 @@ Arduino MIDI Library, etc.).
   uint8_t n = GingoMIDI1::fromEvent(event, buf, sizeof(buf));
   ```
 
-- **Replacing `seq.toMIDI(buf, len, channel)`.**
+- **Replacing `seq.toMIDI(buf, len, channel)`.** Note the channel sentinel
+  changed: in 0.3.x, `channel = 0` meant "keep each event's own channel";
+  in 0.4.0, `0` is a valid override value (channel 0). Use the new
+  `GingoMIDI1::KEEP_CHANNEL` (default) to preserve per-event channels.
 
   ```cpp
-  // Before
-  uint16_t n = seq.toMIDI(buf, sizeof(buf), channel);
+  // Before: channel=0 meant "keep per-event"
+  uint16_t n = seq.toMIDI(buf, sizeof(buf), 0);
 
-  // After
-  uint16_t n = GingoMIDI1::fromSequence(seq, buf, sizeof(buf), channel);
+  // After: KEEP_CHANNEL is the default
+  uint16_t n = GingoMIDI1::fromSequence(seq, buf, sizeof(buf));
+  // ...or explicitly:
+  uint16_t n = GingoMIDI1::fromSequence(seq, buf, sizeof(buf),
+                                        GingoMIDI1::KEEP_CHANNEL);
+
+  // Forcing a specific channel still works:
+  uint16_t n = GingoMIDI1::fromSequence(seq, buf, sizeof(buf), 5);
   ```
 
 - **Updating `perNoteController` calls.**
@@ -113,7 +125,7 @@ Arduino MIDI Library, etc.).
 
 ### Tests
 
-- Native test suite: 395 tests, 0 failures (`-Wall -Wextra -Werror`).
+- Native test suite: 399 tests, 0 failures (`-Wall -Wextra -Werror`).
 - `cmidi2` integration test still passes with zero conflicts.
 
 ### Platform support

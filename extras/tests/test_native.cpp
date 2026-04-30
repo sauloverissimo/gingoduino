@@ -697,7 +697,8 @@ void testMIDI() {
     seq.add(GingoEvent::rest(GingoDuration("half")));
 
     uint8_t seqBuffer[32];
-    uint16_t seqWritten = GingoMIDI1::fromSequence(seq, seqBuffer, sizeof(seqBuffer), 0);
+    // Default channel = KEEP_CHANNEL: each event keeps its own channel.
+    uint16_t seqWritten = GingoMIDI1::fromSequence(seq, seqBuffer, sizeof(seqBuffer));
     CHECK(seqWritten == 12, "sequence with 2 notes fromSequence writes 12 bytes (6+6)");
 
     // Check specific bytes from first event (C4, channel 0 = 0x90)
@@ -1429,7 +1430,32 @@ void testMIDI1() {
         uint8_t buf[6];
         uint16_t n = GingoMIDI1::fromSequence(seq, buf, sizeof(buf), 5);
         CHECK(n == 6, "fromSequence writes 6 bytes");
-        CHECK(buf[0] == (0x90 | 5), "fromSequence channel override");
+        CHECK(buf[0] == (0x90 | 5), "fromSequence channel override 5");
+    }
+
+    // fromSequence — KEEP_CHANNEL preserves per-event channel.
+    {
+        GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
+        seq.add(GingoEvent::noteEvent(GingoNote("C"),
+                                       GingoDuration("quarter"), 4,
+                                       100, 7));   // event channel = 7
+        uint8_t buf[6];
+        uint16_t n = GingoMIDI1::fromSequence(seq, buf, sizeof(buf),
+                                               GingoMIDI1::KEEP_CHANNEL);
+        CHECK(n == 6, "fromSequence KEEP_CHANNEL writes 6 bytes");
+        CHECK(buf[0] == (0x90 | 7), "fromSequence KEEP_CHANNEL preserves event channel");
+    }
+
+    // fromSequence — explicit channel 0 forces channel 0 (not 'keep').
+    {
+        GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
+        seq.add(GingoEvent::noteEvent(GingoNote("C"),
+                                       GingoDuration("quarter"), 4,
+                                       100, 9));   // event channel = 9
+        uint8_t buf[6];
+        uint16_t n = GingoMIDI1::fromSequence(seq, buf, sizeof(buf), 0);
+        CHECK(n == 6, "fromSequence override 0 writes 6 bytes");
+        CHECK(buf[0] == 0x90, "fromSequence channel=0 forces channel 0 (overrides event ch=9)");
     }
 }
 
