@@ -104,13 +104,6 @@ public:
     /// Transpose the event by a number of semitones.
     GingoEvent transpose(int8_t semitones) const;
 
-    /// Serialize to raw MIDI bytes (NoteOn + NoteOff for notes, nothing for rests).
-    /// Uses velocity() and midiChannel() from this event.
-    /// Returns number of bytes written (6 for note event, 0 for rest).
-    /// buf must have at least 6 bytes available.
-    /// For chord events, encodes the root note only.
-    uint8_t toMIDI(uint8_t* buf) const;
-
 private:
     EventType    type_;
     GingoNote    note_;

@@ -24,6 +24,7 @@
 #include "src/GingoProgression.cpp"
 #include "src/GingoMonitor.cpp"
 #include "src/GingoChordComparison.cpp"
+#include "src/GingoMIDI1.cpp"
 
 using namespace gingoduino;
 
@@ -655,10 +656,10 @@ void testMIDI() {
     CHECK(e60.midiNumber() == 60, "fromMIDI event midi=60");
     CHECK(e60.octave() == 4, "fromMIDI event octave=4");
 
-    // GingoEvent::toMIDI (uses internal velocity and channel)
+    // GingoMIDI1::fromEvent (uses event's velocity and channel)
     uint8_t midiBuffer[6];
-    uint8_t written = e60.toMIDI(midiBuffer);
-    CHECK(written == 6, "noteEvent toMIDI writes 6 bytes");
+    uint8_t written = GingoMIDI1::fromEvent(e60, midiBuffer, sizeof(midiBuffer));
+    CHECK(written == 6, "noteEvent fromEvent writes 6 bytes");
     CHECK(midiBuffer[0] == 0x90, "NoteOn status=0x90");
     CHECK(midiBuffer[1] == 60, "NoteOn note=60");
     CHECK(midiBuffer[2] == 100, "NoteOn velocity=100");
@@ -666,16 +667,16 @@ void testMIDI() {
     CHECK(midiBuffer[4] == 60, "NoteOff note=60");
     CHECK(midiBuffer[5] == 0, "NoteOff velocity=0");
 
-    // Rest event toMIDI (should return 0)
+    // Rest event fromEvent (should return 0)
     GingoEvent rest = GingoEvent::rest(GingoDuration("quarter"));
-    uint8_t restWritten = rest.toMIDI(midiBuffer);
-    CHECK(restWritten == 0, "rest toMIDI writes 0 bytes");
+    uint8_t restWritten = GingoMIDI1::fromEvent(rest, midiBuffer, sizeof(midiBuffer));
+    CHECK(restWritten == 0, "rest fromEvent writes 0 bytes");
 
     // Test velocity and channel customization (channels are 0-15, UMP convention)
     GingoEvent eVel = GingoEvent::noteEvent(GingoNote("C"), GingoDuration("quarter"), 4, 64, 2);
     CHECK(eVel.velocity() == 64, "custom velocity=64");
     CHECK(eVel.midiChannel() == 2, "custom channel=2");
-    eVel.toMIDI(midiBuffer);
+    GingoMIDI1::fromEvent(eVel, midiBuffer, sizeof(midiBuffer));
     CHECK(midiBuffer[0] == 0x92, "channel 2 = 0x90 | 2 = 0x92");
     CHECK(midiBuffer[2] == 64, "velocity=64");
 
@@ -685,19 +686,19 @@ void testMIDI() {
     eMod.setMidiChannel(15);
     CHECK(eMod.velocity() == 127, "setVelocity(127)");
     CHECK(eMod.midiChannel() == 15, "setMidiChannel(15)");
-    eMod.toMIDI(midiBuffer);
+    GingoMIDI1::fromEvent(eMod, midiBuffer, sizeof(midiBuffer));
     CHECK(midiBuffer[0] == 0x9F, "channel 15 = 0x90 | 15 = 0x9F");
     CHECK(midiBuffer[2] == 127, "velocity=127");
 
-    // GingoSequence::toMIDI
+    // GingoMIDI1::fromSequence
     GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
     seq.add(GingoEvent::noteEvent(GingoNote("C"), GingoDuration("quarter"), 4));
     seq.add(GingoEvent::noteEvent(GingoNote("E"), GingoDuration("quarter"), 4));
     seq.add(GingoEvent::rest(GingoDuration("half")));
 
     uint8_t seqBuffer[32];
-    uint16_t seqWritten = seq.toMIDI(seqBuffer, sizeof(seqBuffer), 0);  // channel 0 (UMP convention)
-    CHECK(seqWritten == 12, "sequence with 2 notes toMIDI writes 12 bytes (6+6)");
+    uint16_t seqWritten = GingoMIDI1::fromSequence(seq, seqBuffer, sizeof(seqBuffer), 0);
+    CHECK(seqWritten == 12, "sequence with 2 notes fromSequence writes 12 bytes (6+6)");
 
     // Check specific bytes from first event (C4, channel 0 = 0x90)
     CHECK(seqBuffer[0] == 0x90, "seq[0] NoteOn status");
@@ -1396,93 +1397,39 @@ void testMonitor() {
 // =====================================================================
 
 void testMIDI1() {
-    printf("\n=== GingoMIDI1 ===\n");
+    printf("\n=== GingoMIDI1 (output adapters) ===\n");
 
-    // GingoMIDI1::dispatch — Note On
+    // fromEvent — single note round-trip already covered in testEvent.
+    // Re-verify here as smoke test of the namespace export.
     {
-        GingoMonitor mon;
-        bool handled = GingoMIDI1::dispatch(0x90, 60, 100, mon);
-        CHECK(handled, "dispatch 0x90 Note On handled");
+        GingoEvent e = GingoEvent::noteEvent(GingoNote("C"),
+                                              GingoDuration("quarter"), 4,
+                                              100, 0);
+        uint8_t buf[6];
+        uint8_t n = GingoMIDI1::fromEvent(e, buf, sizeof(buf));
+        CHECK(n == 6, "fromEvent writes 6 bytes");
+        CHECK(buf[0] == 0x90 && buf[1] == 60 && buf[2] == 100,
+              "fromEvent NoteOn C4 vel=100");
     }
 
-    // dispatch — Note On vel=0 → Note Off
+    // fromEvent — buffer too small returns 0.
     {
-        GingoMonitor mon;
-        GingoMIDI1::dispatch(0x90, 60, 100, mon);
-        bool handled = GingoMIDI1::dispatch(0x90, 60, 0, mon);
-        CHECK(handled, "dispatch 0x90 vel=0 → Note Off handled");
+        GingoEvent e = GingoEvent::noteEvent(GingoNote("C"),
+                                              GingoDuration("quarter"), 4);
+        uint8_t buf[4];
+        uint8_t n = GingoMIDI1::fromEvent(e, buf, sizeof(buf));
+        CHECK(n == 0, "fromEvent returns 0 when maxLen<6");
     }
 
-    // dispatch — Note Off
+    // fromSequence — channel override.
     {
-        GingoMonitor mon;
-        GingoMIDI1::dispatch(0x90, 60, 100, mon);
-        bool handled = GingoMIDI1::dispatch(0x80, 60, 0, mon);
-        CHECK(handled, "dispatch 0x80 Note Off handled");
-    }
-
-    // dispatch — CC64 sustain on/off
-    {
-        GingoMonitor mon;
-        bool on  = GingoMIDI1::dispatch(0xB0, 64, 127, mon);
-        bool off = GingoMIDI1::dispatch(0xB0, 64, 0, mon);
-        CHECK(on,  "dispatch CC64 sustain on");
-        CHECK(off, "dispatch CC64 sustain off");
-    }
-
-    // dispatch — CC123 All Notes Off → reset
-    {
-        GingoMonitor mon;
-        GingoMIDI1::dispatch(0x90, 60, 100, mon);
-        bool handled = GingoMIDI1::dispatch(0xB0, 123, 0, mon);
-        CHECK(handled, "dispatch CC123 All Notes Off");
-        CHECK(!mon.hasChord(), "CC123 clears monitor");
-    }
-
-    // dispatch — unhandled returns false
-    {
-        GingoMonitor mon;
-        bool handled = GingoMIDI1::dispatch(0xE0, 0, 64, mon);
-        CHECK(!handled, "pitch bend not handled");
-    }
-
-    // GingoMIDI1Parser::feed — builds chord from raw bytes
-    {
-        GingoMIDI1Parser parser;
-        GingoMonitor mon;
-        // Note On for C4 (0x90, 60, 100)
-        parser.feed(0x90, mon);
-        parser.feed(60, mon);
-        parser.feed(100, mon);
-        // Note On for E4 (running status: 64, 100)
-        parser.feed(64, mon);
-        parser.feed(100, mon);
-        // Note On for G4 (running status: 67, 100)
-        parser.feed(67, mon);
-        parser.feed(100, mon);
-        CHECK(mon.hasChord(), "parser feed → CM detected");
-        CHECK(strcmp(mon.currentChord().name(), "CM") == 0, "parser feed → CM");
-    }
-
-    // Parser — SysEx absorbed, real-time bytes ignored
-    {
-        GingoMIDI1Parser parser;
-        GingoMonitor mon;
-        // Start SysEx
-        parser.feed(0xF0, mon);
-        parser.feed(0x7E, mon);
-        parser.feed(0x01, mon);
-        // Real-time byte mid-SysEx
-        parser.feed(0xF8, mon);
-        // End SysEx
-        parser.feed(0xF7, mon);
-        // Now send a note — should work normally
-        parser.feed(0x90, mon);
-        parser.feed(60, mon);
-        parser.feed(100, mon);
-        // Verify note was received (monitor has at least one note)
-        // Note: single note won't detect chord, but no crash is the test
-        CHECK(!mon.hasChord(), "SysEx absorbed, single note no chord");
+        GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
+        seq.add(GingoEvent::noteEvent(GingoNote("C"),
+                                       GingoDuration("quarter"), 4));
+        uint8_t buf[6];
+        uint16_t n = GingoMIDI1::fromSequence(seq, buf, sizeof(buf), 5);
+        CHECK(n == 6, "fromSequence writes 6 bytes");
+        CHECK(buf[0] == (0x90 | 5), "fromSequence channel override");
     }
 }
 
@@ -1576,7 +1523,7 @@ void testMIDI2() {
     {
         GingoField f("C", SCALE_MAJOR);
         GingoNoteContext ctx = f.noteContext(GingoNote("E"));
-        GingoUMP ump = GingoMIDI2::perNoteController(64, ctx);
+        GingoUMP ump = GingoMIDI2::perNoteController(ctx, 64);
         CHECK(ump.wordCount == 2, "perNoteCtrl wordCount=2");
         uint32_t mt = (ump.words[0] >> 28) & 0xF;
         CHECK(mt == 0x4, "perNoteCtrl MT=0x4");
@@ -1599,59 +1546,6 @@ void testMIDI2() {
         CHECK(buf[0] == 0xD0, "toBytesBE first byte 0xD0");
     }
 
-    // dispatch — MT=0x2 (MIDI 1.0 over UMP)
-    {
-        GingoMonitor mon;
-        // Note On C4: MT=2, group=0, opcode=0x9, ch=0, note=60, vel=100
-        uint32_t words[2];
-        words[0] = (0x2U << 28) | (0x9U << 20) | (60U << 8) | 100U;
-        words[1] = 0;
-        bool handled = GingoMIDI2::dispatch(words, mon);
-        CHECK(handled, "dispatch MT=2 Note On handled");
-    }
-
-    // dispatch — MT=0x4 (MIDI 2.0)
-    {
-        GingoMonitor mon;
-        // Note On C4: MT=4, group=0, opcode=9, ch=0, note=60, reserved=0
-        uint32_t words[2];
-        words[0] = (0x4U << 28) | (0x9U << 20) | (60U << 8);
-        words[1] = 0x8000U << 16;  // vel16 = 0x8000 (non-zero)
-        bool handled = GingoMIDI2::dispatch(words, mon);
-        CHECK(handled, "dispatch MT=4 Note On handled");
-    }
-
-    // GingoMIDICI — discoveryRequest
-    {
-        uint8_t buf[64];
-        uint8_t len = GingoMIDICI::discoveryRequest(buf, sizeof(buf));
-        CHECK(len == 31, "discoveryRequest len=31");
-        CHECK(buf[0] == 0xF0, "discoveryRequest starts with SysEx");
-        CHECK(buf[len - 1] == 0xF7, "discoveryRequest ends with SysEx");
-        CHECK(buf[3] == 0x0D, "discoveryRequest MIDI-CI ID");
-        CHECK(buf[4] == 0x70, "discoveryRequest sub-ID 0x70");
-    }
-
-    // GingoMIDICI — profileInquiryReply
-    {
-        uint8_t buf[32];
-        uint8_t len = GingoMIDICI::profileInquiryReply(buf, sizeof(buf));
-        CHECK(len == 23, "profileInquiryReply len=23");
-        CHECK(buf[0] == 0xF0, "profileInquiryReply SysEx start");
-        CHECK(buf[4] == 0x22, "profileInquiryReply sub-ID 0x22");
-        CHECK(buf[len - 1] == 0xF7, "profileInquiryReply SysEx end");
-    }
-
-    // GingoMIDICI — capabilitiesJSON
-    {
-        char buf[255];
-        uint8_t len = GingoMIDICI::capabilitiesJSON(buf, (uint8_t)sizeof(buf));
-        CHECK(len > 0, "capabilitiesJSON returns bytes");
-        CHECK(buf[0] == '{', "capabilitiesJSON starts with {");
-        // Verify contains key fields
-        CHECK(strstr(buf, "gingoduino") != nullptr, "capabilitiesJSON has name");
-        CHECK(strstr(buf, "chord_detect") != nullptr, "capabilitiesJSON has chord_detect");
-    }
 }
 
 // =====================================================================

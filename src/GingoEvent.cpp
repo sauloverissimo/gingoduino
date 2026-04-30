@@ -86,29 +86,6 @@ GingoEvent GingoEvent::transpose(int8_t semitones) const {
     }
 }
 
-uint8_t GingoEvent::toMIDI(uint8_t* buf) const {
-    if (!buf) return 0;
-
-    if (type_ == EVENT_REST) {
-        return 0;  // No MIDI output for rests
-    }
-
-    uint8_t noteNum = midiNumber();
-    uint8_t status = 0x90 | (midiChannel_ & 0x0F);  // NoteOn status byte
-
-    // NoteOn: [status, note, velocity]
-    buf[0] = status;
-    buf[1] = noteNum;
-    buf[2] = velocity_;
-
-    // NoteOff: [status, note, 0]
-    buf[3] = 0x80 | (midiChannel_ & 0x0F);
-    buf[4] = noteNum;
-    buf[5] = 0;
-
-    return 6;
-}
-
 } // namespace gingoduino
 
 #endif // GINGODUINO_HAS_EVENT

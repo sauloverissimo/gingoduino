@@ -71,7 +71,7 @@ void setup() {
 
     // Export to MIDI
     uint8_t midiBuffer[MIDI_BUFFER_SIZE];
-    uint16_t midiSize = seq.toMIDI(midiBuffer, sizeof(midiBuffer), MIDI_CHANNEL);
+    uint16_t midiSize = GingoMIDI1::fromSequence(seq, midiBuffer, sizeof(midiBuffer), MIDI_CHANNEL);
 
     Serial.print("MIDI data: ");
     Serial.print(midiSize);
@@ -97,7 +97,7 @@ void loop() {
     seq.add(GingoEvent::noteEvent(GingoNote("C"), GingoDuration("quarter"), 5));
 
     uint8_t midiBuffer[MIDI_BUFFER_SIZE];
-    uint16_t midiSize = seq.toMIDI(midiBuffer, sizeof(midiBuffer), MIDI_CHANNEL);
+    uint16_t midiSize = GingoMIDI1::fromSequence(seq, midiBuffer, sizeof(midiBuffer), MIDI_CHANNEL);
 
     sendMIDI(midiBuffer, midiSize);
 }

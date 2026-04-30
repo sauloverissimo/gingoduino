@@ -66,35 +66,6 @@ void GingoSequence::transpose(int8_t semitones) {
     }
 }
 
-uint16_t GingoSequence::toMIDI(uint8_t* buf, uint16_t maxLen, uint8_t channel) const {
-    if (!buf || maxLen == 0) return 0;
-
-    uint16_t offset = 0;
-    for (uint8_t i = 0; i < count_; i++) {
-        uint8_t needed = 6;  // max 6 bytes per event (NoteOn + NoteOff)
-        if (events_[i].type() == EVENT_REST) {
-            needed = 0;
-        }
-
-        // Check if we have space
-        if (offset + needed > maxLen) {
-            break;  // Stop early if buffer is too small
-        }
-
-        // For GingoSequence, override MIDI channel if specified (default: use event's channel)
-        GingoEvent eventToSend = events_[i];
-        if (channel != 0) {  // 0 = use event's channel, otherwise override
-            eventToSend.setMidiChannel(channel);
-        }
-
-        // Serialize this event (no longer needs channel/velocity parameters)
-        uint8_t written = eventToSend.toMIDI(buf + offset);
-        offset += written;
-    }
-
-    return offset;
-}
-
 } // namespace gingoduino
 
 #endif // GINGODUINO_HAS_SEQUENCE
