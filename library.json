@@ -1,7 +1,7 @@
 {
   "name": "Gingoduino",
-  "version": "0.3.0",
-  "description": "Music theory library for embedded systems. Notes, intervals, chords, scales, harmonic fields, durations, tempo, time signatures, fretboard engine, events, sequences, harmonic trees, and progression analysis. Zero-heap C++11, PROGMEM tables, tier-based compilation.",
+  "version": "0.4.0",
+  "description": "Music theory engine for embedded systems. Notes, intervals, chords, scales, harmonic fields, harmonic trees, progression analysis, fretboard engine, real-time harmonic monitor, events and sequences. Stateless output adapters serialize musical structures to MIDI 1.0 bytes and MIDI 2.0 UMP Flex Data. Transport is delegated to dedicated libraries such as midi2_cpp. Zero-heap C++11, PROGMEM tables, tier-based compilation.",
   "keywords": [
     "music",
     "theory",
