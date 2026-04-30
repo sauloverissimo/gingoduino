@@ -1,4 +1,4 @@
-// Gingoduino v0.2.0 — Export Sequence to MIDI
+// Gingoduino - Export Sequence to MIDI
 //
 // This example demonstrates creating a musical sequence with Gingoduino
 // and exporting it as raw MIDI bytes to send to a synthesizer or DAW.

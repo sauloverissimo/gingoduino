@@ -1,4 +1,4 @@
-// Gingoduino — ScaleExplorer Example
+// Gingoduino - ScaleExplorer Example
 // Demonstrates GingoScale: modes, pentatonic, contains.
 // Requires Tier 2 (ESP8266+, ESP32, Teensy, DaisySeed, Pico).
 //

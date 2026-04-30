@@ -1,4 +1,4 @@
-// I2S DAC Pin Scanner — Minimal test for PCM5102 on T-Display-S3 MIDI Shield
+// I2S DAC Pin Scanner - Minimal test for PCM5102 on T-Display-S3 MIDI Shield
 //
 // Tests ALL available GPIO combinations to find which pins connect to
 // the PCM5102 DAC on the MIDI Shield V1.1.
@@ -7,7 +7,7 @@
 //   1. Connect headphones/speaker to the 3.5mm jack
 //   2. Open Serial Monitor at 115200 baud
 //   3. Upload this sketch
-//   4. Listen — each test plays 440Hz for 1.5 seconds
+//   4. Listen - each test plays 440Hz for 1.5 seconds
 //   5. Report which test number produces sound
 //
 // After the scan, it plays a continuous tone for multimeter probing.
@@ -148,7 +148,7 @@ void setup() {
     playTone(16, 17, 18, t++); // 26
 
     Serial.println("\n========================================");
-    Serial.printf("  SCAN COMPLETE — %d tests done\n", t - 1);
+    Serial.printf("  SCAN COMPLETE - %d tests done\n", t - 1);
     Serial.println("  Which test produced sound?");
     Serial.println("========================================");
     Serial.println("\nNow: continuous 440Hz on BCK=11 WS=10 DOUT=12");

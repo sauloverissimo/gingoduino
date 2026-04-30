@@ -1,4 +1,4 @@
-// Gingoduino v0.2.0 — Real-Time Chord Identifier
+// Gingoduino - Real-Time Chord Identifier
 //
 // This example identifies chords in real-time from MIDI input.
 // It groups notes by chordIndex (simultaneous note presses) and

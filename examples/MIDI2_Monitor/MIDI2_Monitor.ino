@@ -1,4 +1,4 @@
-// Gingoduino — MIDI 2.0 Monitor
+// Gingoduino - MIDI 2.0 Monitor
 //
 // Reads raw MIDI 1.0 bytes from a UART (DIN MIDI optocoupler input),
 // translates the bytes into musical events with a tiny inline parser,
@@ -17,7 +17,7 @@
 //   Adapt MIDI_RX_PIN / MIDI_TX_PIN to your board.
 //
 // Why no built-in parser?
-//   gingoduino is a music theory engine — it intentionally does not
+//   gingoduino is a music theory engine - it intentionally does not
 //   know about UART byte streams, running status or SysEx. Use any
 //   parser you already have (Arduino MIDI Library, midi2_cpp,
 //   ESP32_Host_MIDI). The parser below is provided inline as a
@@ -34,8 +34,8 @@ using namespace gingoduino;
 // Pin configuration
 // ---------------------------------------------------------------------------
 
-#define MIDI_RX_PIN  16   // Serial1 RX — connect to MIDI optocoupler output
-#define MIDI_TX_PIN  17   // Serial1 TX — unused for monitoring
+#define MIDI_RX_PIN  16   // Serial1 RX - connect to MIDI optocoupler output
+#define MIDI_TX_PIN  17   // Serial1 TX - unused for monitoring
 
 // ---------------------------------------------------------------------------
 // Library objects

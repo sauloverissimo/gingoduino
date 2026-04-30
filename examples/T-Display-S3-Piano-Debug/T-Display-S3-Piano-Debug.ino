@@ -3,16 +3,16 @@
 // Shows incoming MIDI events directly on the ST7789 display.
 // Use to diagnose USB MIDI issues without Serial port.
 //
-// Top:    two headers — manual tracking vs fillActiveNotes (MIDIHandler map)
+// Top:    two headers - manual tracking vs fillActiveNotes (MIDIHandler map)
 // Middle: colour-coded event log
-// Bottom: mini-piano bar (25 keys) using fillActiveNotes — same as Piano example
+// Bottom: mini-piano bar (25 keys) using fillActiveNotes - same as Piano example
 //
 // Colour coding:
-//   Cyan    — RAW bytes
-//   Green   — NoteOn
-//   Yellow  — NoteOff
-//   Orange  — ControlChange / PitchBend
-//   White   — STATE / info
+//   Cyan    - RAW bytes
+//   Green   - NoteOn
+//   Yellow  - NoteOff
+//   Orange  - ControlChange / PitchBend
+//   White   - STATE / info
 //
 // Controls:
 //   Button 1 (GPIO  0): scroll log up
@@ -25,7 +25,7 @@
 #include <ESP32_Host_MIDI.h>
 #include "mapping.h"
 
-// ── LGFX — T-Display S3 (ST7789, 8-bit parallel) ────────────────────────────
+// ── LGFX - T-Display S3 (ST7789, 8-bit parallel) ────────────────────────────
 class LGFX : public lgfx::LGFX_Device {
     lgfx::Bus_Parallel8 _bus;
     lgfx::Panel_ST7789  _panel;
@@ -104,7 +104,7 @@ static void addLogC(uint16_t color, const char* fmt, ...) {
     logScroll = 0;
 }
 
-// ── Active notes — two independent tracking methods ──────────────────────────
+// ── Active notes - two independent tracking methods ──────────────────────────
 static bool manualNotes[128] = {};   // tracked from queue events
 static bool fillNotes[128]   = {};   // from MIDIHandler::fillActiveNotes
 
@@ -315,7 +315,7 @@ void loop() {
         render();
     }
 
-    // Button 1 — scroll up
+    // Button 1 - scroll up
     if (digitalRead(PIN_BUTTON_1) == LOW && nowMs - btn1Last > DEBOUNCE_MS) {
         btn1Last = nowMs;
         int vis = (MINI_Y - 20) / 8;
@@ -323,7 +323,7 @@ void loop() {
         logScroll = min(logScroll + 1, maxScroll);
     }
 
-    // Button 2 — clear everything
+    // Button 2 - clear everything
     if (digitalRead(PIN_BUTTON_2) == LOW && nowMs - btn2Last > DEBOUNCE_MS) {
         btn2Last = nowMs;
         clearLog();

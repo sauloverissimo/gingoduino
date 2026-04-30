@@ -1,4 +1,4 @@
-// Gingoduino — T-Display-S3 Music Theory Explorer + Audio Synthesis
+// Gingoduino - T-Display-S3 Music Theory Explorer + Audio Synthesis
 //
 // SPDX-License-Identifier: MIT
 //
@@ -11,18 +11,18 @@
 //                          OR play/stop sequence (on Sequence page)
 //
 // Pages (each plays audio when navigating):
-//   1. Note Explorer       — 12 chromatic notes with frequency/MIDI
-//   2. Interval Explorer   — 12 simple intervals (plays as 2-voice)
-//   3. Chord Explorer      — common chords with notes and intervals
-//   4. Scale Explorer      — scales/modes (plays as arpeggio)
-//   5. Harmonic Field      — triads + sevenths with T/S/D (plays progression)
-//   6. Fretboard           — guitar diagram with chord/scale overlay
-//   7. Sequence            — timeline visualization with PLAY/STOP button
+//   1. Note Explorer       - 12 chromatic notes with frequency/MIDI
+//   2. Interval Explorer   - 12 simple intervals (plays as 2-voice)
+//   3. Chord Explorer      - common chords with notes and intervals
+//   4. Scale Explorer      - scales/modes (plays as arpeggio)
+//   5. Harmonic Field      - triads + sevenths with T/S/D (plays progression)
+//   6. Fretboard           - guitar diagram with chord/scale overlay
+//   7. Sequence            - timeline visualization with PLAY/STOP button
 //
 // Audio Hardware: PCM5102A I2S DAC (3.5mm stereo output)
-//   GPIO 11: I2S BCK  (bit clock)   — via R15 470ohm → PCM5102 pin 13
-//   GPIO 12: I2S DIN  (data out)    — via R14 470ohm → PCM5102 pin 14
-//   GPIO 13: I2S LRCK (word select) — via R13 470ohm → PCM5102 pin 15
+//   GPIO 11: I2S BCK  (bit clock)   - via R15 470ohm → PCM5102 pin 13
+//   GPIO 12: I2S DIN  (data out)    - via R14 470ohm → PCM5102 pin 14
+//   GPIO 13: I2S LRCK (word select) - via R13 470ohm → PCM5102 pin 15
 //   MCLK: not used (PCM5102 SCK pin tied to GND = 3-wire mode)
 //
 // REQUIRES:
@@ -40,7 +40,7 @@
 using namespace gingoduino;
 
 // ---------------------------------------------------------------------------
-// Audio Engine — polyphonic voices with individual ADSR envelopes
+// Audio Engine - polyphonic voices with individual ADSR envelopes
 // ---------------------------------------------------------------------------
 #define MAX_VOICES    4
 #define MAX_SCHEDULED 32
@@ -74,7 +74,7 @@ struct AudioEngine {
     Voice voices[MAX_VOICES];
     ADSRParams adsr;
 
-    // Non-blocking scheduler (accessed from both cores — use schedCount as gate)
+    // Non-blocking scheduler (accessed from both cores - use schedCount as gate)
     ScheduledEvent schedule[MAX_SCHEDULED];
     volatile uint8_t schedCount;
     uint32_t sampleClock;
@@ -140,15 +140,15 @@ TFT_eSPI tft = TFT_eSPI();
 #define C_TONIC     0x07E0  // green
 #define C_SUBDOM    0xFFE0  // yellow
 #define C_DOMINANT  0xF800  // red
-#define C_PERFECT   0x07E0  // green  — perfect consonance
-#define C_IMPERFECT 0x04DF  // blue   — imperfect consonance
-#define C_DISSONANT 0xF800  // red    — dissonance
-#define C_STRING    0xBDF7  // light grey — fretboard strings
-#define C_FRET_LINE 0x6B4D  // medium grey — frets
-#define C_NUT       0xFFFF  // white — nut (fret 0)
-#define C_DOT       0x07E0  // green — fretted positions
-#define C_OPEN_STR  0x07FF  // cyan — open string
-#define C_MUTED_STR 0xF800  // red — muted string
+#define C_PERFECT   0x07E0  // green  - perfect consonance
+#define C_IMPERFECT 0x04DF  // blue   - imperfect consonance
+#define C_DISSONANT 0xF800  // red    - dissonance
+#define C_STRING    0xBDF7  // light grey - fretboard strings
+#define C_FRET_LINE 0x6B4D  // medium grey - frets
+#define C_NUT       0xFFFF  // white - nut (fret 0)
+#define C_DOT       0x07E0  // green - fretted positions
+#define C_OPEN_STR  0x07FF  // cyan - open string
+#define C_MUTED_STR 0xF800  // red - muted string
 #define C_EVT_NOTE  0xFFE0  // yellow
 #define C_EVT_CHORD 0xFBE0  // orange
 #define C_EVT_REST  0x4208  // dark grey
@@ -787,7 +787,7 @@ void drawFretGrid(uint8_t baseFret) {
     int fbW = FB_FRETS * FRET_W;
     int fbH = (totalStrings - 1) * STRING_GAP;
 
-    // Strings (horizontal) — top to bottom: E2 A2 D3 G3 B3 E4
+    // Strings (horizontal) - top to bottom: E2 A2 D3 G3 B3 E4
     static const char* STRING_NAMES[6] = {"E", "A", "D", "G", "B", "E"};
     for (uint8_t s = 0; s < totalStrings; s++) {
         int y = FB_Y + s * STRING_GAP;
@@ -1129,7 +1129,7 @@ void drawSequencePage() {
 }
 
 // ---------------------------------------------------------------------------
-// Audio Engine — polyphonic synthesizer with per-voice ADSR
+// Audio Engine - polyphonic synthesizer with per-voice ADSR
 // ---------------------------------------------------------------------------
 
 /// Process ADSR envelope for one voice, returns current level.
@@ -1302,7 +1302,7 @@ void audioTask(void* pvParameters) {
 }
 
 // ---------------------------------------------------------------------------
-// Audio API — all non-blocking, returns immediately
+// Audio API - all non-blocking, returns immediately
 // ---------------------------------------------------------------------------
 
 /// Stop all audio smoothly (release all voices, clear schedule).
@@ -1553,7 +1553,7 @@ void setup() {
     xTaskCreatePinnedToCore(
         audioTask,           // function
         "AudioTask",         // name
-        8192,                // stack size (bytes) — larger for float math
+        8192,                // stack size (bytes) - larger for float math
         NULL,                // parameters
         2,                   // priority (higher than loop)
         &audioTaskHandle,    // task handle
@@ -1565,7 +1565,7 @@ void loop() {
     unsigned long now = millis();
     bool itemChanged = false;
 
-    // LEFT button — switch page, stop any playing audio
+    // LEFT button - switch page, stop any playing audio
     if (digitalRead(BTN_LEFT) == LOW && (now - lastBtnLeft) > DEBOUNCE_MS) {
         lastBtnLeft = now;
         killAllAudio();
@@ -1622,7 +1622,7 @@ void loop() {
         }
     }
 
-    // REDRAW FIRST (fast, ~20ms) — then trigger audio
+    // REDRAW FIRST (fast, ~20ms) - then trigger audio
     if (needRedraw) {
         needRedraw = false;
         switch (currentPage) {

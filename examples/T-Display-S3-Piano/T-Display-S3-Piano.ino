@@ -9,7 +9,7 @@
 //
 // Dependencies:
 //   - ESP32_Host_MIDI (this library)
-//   - Gingoduino v0.2.2+  (https://github.com/sauloverissimo/gingoduino)
+//   - Gingoduino v0.4.0+ (https://github.com/sauloverissimo/gingoduino)
 //   - LovyanGFX
 
 #include <Arduino.h>

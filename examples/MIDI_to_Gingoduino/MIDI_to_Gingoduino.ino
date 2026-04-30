@@ -1,4 +1,4 @@
-// Gingoduino v0.2.0 — MIDI to Music Theory
+// Gingoduino - MIDI to Music Theory
 //
 // This example demonstrates converting MIDI input to Gingoduino structures.
 // It uses ESP32_Host_MIDI to receive MIDI from USB or BLE and analyzes

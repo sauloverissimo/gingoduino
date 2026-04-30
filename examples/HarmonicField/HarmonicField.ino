@@ -1,4 +1,4 @@
-// Gingoduino — HarmonicField Example
+// Gingoduino - HarmonicField Example
 // Demonstrates GingoField: triads, sevenths, harmonic functions.
 // Requires Tier 2 (ESP8266+, ESP32, Teensy, DaisySeed, Pico).
 //

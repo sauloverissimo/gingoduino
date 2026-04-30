@@ -13,8 +13,8 @@
 // ---------------------------------------------------------------------------
 // Buttons
 // ---------------------------------------------------------------------------
-#define BTN_LEFT   0   // BOOT button — switch page
-#define BTN_RIGHT  14  // KEY  button — cycle items
+#define BTN_LEFT   0   // BOOT button - switch page
+#define BTN_RIGHT  14  // KEY  button - cycle items
 
 // ---------------------------------------------------------------------------
 // Display
@@ -26,7 +26,7 @@
 #define SCR_H 170
 
 // ---------------------------------------------------------------------------
-// I2S Audio (PCM5102 DAC — 3-wire mode, MCLK not used)
+// I2S Audio (PCM5102 DAC - 3-wire mode, MCLK not used)
 // ---------------------------------------------------------------------------
 #define I2S_BCK         11  // bit clock   (via R15 470ohm → PCM5102 pin 13)
 #define I2S_LRCK        13  // word select (via R13 470ohm → PCM5102 pin 15)

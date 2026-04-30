@@ -148,7 +148,7 @@ playScaleArpeggio(scale, octave=4);
 - **Future solution**: async playback task (v0.3+)
 
 #### Audio quality
-- Simple synthesis (pure sine wave) — no harmonics
+- Simple synthesis (pure sine wave) - no harmonics
 - No filters, reverb, or effects
 - Click/pop when changing frequencies rapidly (no glide)
 - **Future solution**: wavetable oscillator (v0.3+)
@@ -342,7 +342,7 @@ playScaleArpeggio(scale, octave=4);
 - **Solucao futura**: task assincrona para playback (v0.3+)
 
 #### Qualidade de audio
-- Sintese simples (sine wave pura) — sem harmonics
+- Sintese simples (sine wave pura) - sem harmonics
 - Sem filtros, reverb, ou efeitos
 - Click/pop ao mudar frequencias rapidamente (sem glide)
 - **Solucao futura**: oscilador com wavetable (v0.3+)
