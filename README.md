@@ -304,17 +304,18 @@ Input from MIDI 1.0 byte streams is intentionally not in scope. Use any external
 
 ### GingoMIDI2, UMP Flex Data adapters (Tier 3)
 ```cpp
-GingoUMP ump = GingoMIDI2::chordName(GingoChord("CM"));
-GingoUMP ump = GingoMIDI2::keySignature(scale);
-GingoUMP ump = GingoMIDI2::keySignature(scale, group, channel);
+auto chordUMP  = GingoMIDI2::chordName(GingoChord("CM"));
+auto keySigUMP = GingoMIDI2::keySignature(scale);                   // group=0, channel=0 default
+auto keySigCh5 = GingoMIDI2::keySignature(scale, /*group=*/0, /*channel=*/5);
 
 GingoNoteContext ctx = field.noteContext(GingoNote("E"));
-GingoUMP ump = GingoMIDI2::perNoteController(ctx, /*midiNote=*/64);
+auto rccUMP = GingoMIDI2::perNoteController(ctx, /*midiNote=*/64);
 
-ump.wordCount;     // 4 (128-bit Flex Data) or 2 (64-bit per-note CC)
-ump.byteCount();   // total bytes
+chordUMP.wordCount;    // 4 (128-bit Flex Data)
+rccUMP.wordCount;      // 2 (64-bit per-note CC)
+chordUMP.byteCount();  // 16
 uint8_t bytes[16];
-ump.toBytesBE(bytes, sizeof(bytes));   // big-endian wire serialization
+chordUMP.toBytesBE(bytes, sizeof(bytes));   // big-endian wire serialization
 ```
 
 UMP receive dispatch and MIDI-CI are out of scope. Use `midi2_cpp` (or any UMP library) for receive callbacks, and the [`midi2`](https://github.com/sauloverissimo/midi2) C99 library for MIDI-CI responder/initiator flows.
@@ -384,7 +385,7 @@ See [examples/MIDI2_Monitor/MIDI2_Monitor.ino](examples/MIDI2_Monitor/MIDI2_Moni
 | HarmonicField | Triads, sevenths, harmonic functions | 2 |
 | TDisplayS3Explorer | 7-page interactive GUI on LilyGo T-Display S3 | 3 |
 | T-Display-S3-Piano | 25-key piano visualizer with theory analysis and onboard synth | 3 |
-| T-Display-S3-Piano-Debug | Diagnostic MIDI event log on the ST7789 (no audio, no Gingoduino theory) | 3 |
+| T-Display-S3-Piano-Debug | Diagnostic MIDI event log on the ST7789 (no audio synthesis, no theory analysis) | 3 |
 | MIDI2_Monitor | UART MIDI 1.0 in (inline parser), Monitor analysis, UMP Flex Data out | 3 |
 | Gingoduino_to_MIDI | Build a sequence and serialize via `GingoMIDI1::fromSequence` | 3 |
 | I2S_DAC_Test | Hardware utility: scan I2S pin combinations to find a working PCM5102 wiring | 3 |

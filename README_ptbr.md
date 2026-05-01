@@ -302,17 +302,18 @@ A entrada de byte stream MIDI 1.0 fica intencionalmente fora do escopo. Use qual
 
 ### GingoMIDI2, adaptadores UMP Flex Data (Tier 3)
 ```cpp
-GingoUMP ump = GingoMIDI2::chordName(GingoChord("CM"));
-GingoUMP ump = GingoMIDI2::keySignature(scale);
-GingoUMP ump = GingoMIDI2::keySignature(scale, group, channel);
+auto chordUMP  = GingoMIDI2::chordName(GingoChord("CM"));
+auto keySigUMP = GingoMIDI2::keySignature(scale);                   // group=0, channel=0 default
+auto keySigCh5 = GingoMIDI2::keySignature(scale, /*group=*/0, /*channel=*/5);
 
 GingoNoteContext ctx = field.noteContext(GingoNote("E"));
-GingoUMP ump = GingoMIDI2::perNoteController(ctx, /*midiNote=*/64);
+auto rccUMP = GingoMIDI2::perNoteController(ctx, /*midiNote=*/64);
 
-ump.wordCount;     // 4 (Flex Data 128-bit) ou 2 (per-note CC 64-bit)
-ump.byteCount();   // total de bytes
+chordUMP.wordCount;    // 4 (Flex Data 128-bit)
+rccUMP.wordCount;      // 2 (per-note CC 64-bit)
+chordUMP.byteCount();  // 16
 uint8_t bytes[16];
-ump.toBytesBE(bytes, sizeof(bytes));   // serialização big-endian pro fio
+chordUMP.toBytesBE(bytes, sizeof(bytes));   // serialização big-endian pro fio
 ```
 
 Dispatch de UMP recebido e MIDI-CI estão fora do escopo. Use `midi2_cpp` (ou outra lib UMP) para callbacks de recepção, e a biblioteca [`midi2`](https://github.com/sauloverissimo/midi2) C99 para fluxos de responder/initiator MIDI-CI.
@@ -382,7 +383,7 @@ Veja [examples/MIDI2_Monitor/MIDI2_Monitor.ino](examples/MIDI2_Monitor/MIDI2_Mon
 | HarmonicField | Tríades, tétrades, funções harmônicas | 2 |
 | TDisplayS3Explorer | GUI interativa de 7 páginas no LilyGo T-Display S3 | 3 |
 | T-Display-S3-Piano | Visualizador piano de 25 teclas com análise teórica e síntese onboard | 3 |
-| T-Display-S3-Piano-Debug | Log diagnóstico de eventos MIDI no ST7789 (sem audio, sem teoria Gingoduino) | 3 |
+| T-Display-S3-Piano-Debug | Log diagnóstico de eventos MIDI no ST7789 (sem síntese de áudio, sem análise teórica) | 3 |
 | MIDI2_Monitor | UART MIDI 1.0 in (parser inline), análise no Monitor, UMP Flex Data out | 3 |
 | Gingoduino_to_MIDI | Constrói uma sequência e serializa via `GingoMIDI1::fromSequence` | 3 |
 | I2S_DAC_Test | Utilitário de hardware: varre combinações de pinos I2S pra achar fiação válida do PCM5102 | 3 |
