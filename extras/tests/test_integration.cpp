@@ -1,4 +1,4 @@
-// Gingoduino — Zero-Conflict Integration Test
+// Gingoduino - Zero-Conflict Integration Test
 //
 // Verifies that Gingoduino and cmidi2 coexist without namespace or macro
 // conflicts. Both headers are included in the same translation unit, and
@@ -26,7 +26,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-// cmidi2 is a pure-C header — include first to avoid any implicit ordering
+// cmidi2 is a pure-C header - include first to avoid any implicit ordering
 // issues with C++ stdlib headers pulled in by Gingoduino's Tier 3 features.
 #include "extras/tests/vendor/cmidi2.h"
 
@@ -67,7 +67,7 @@ static int testUMPCoexistence() {
     GingoChord cm("CM");
     GingoUMP gingoUmp = GingoMIDI2::chordName(cm);
 
-    // cmidi2 UMP struct — same 4×uint32_t layout (fields: p1, p2, p3, p4)
+    // cmidi2 UMP struct - same 4×uint32_t layout (fields: p1, p2, p3, p4)
     cmidi2_ump128_t cmidi2Ump;
     cmidi2Ump.p1 = gingoUmp.words[0];
     cmidi2Ump.p2 = gingoUmp.words[1];
@@ -80,7 +80,7 @@ static int testUMPCoexistence() {
         printf("  FAIL: UMP MT should be 0xD (FLEX_DATA), got 0x%X\n", (unsigned)mt);
         failures++;
     } else {
-        printf("  OK:   UMP MT=0xD (FLEX_DATA) — GingoUMP and cmidi2_ump128_t agree\n");
+        printf("  OK:   UMP MT=0xD (FLEX_DATA) - GingoUMP and cmidi2_ump128_t agree\n");
     }
 
     // Verify chord name status byte (bits 7-0 of p1) == 0x06
@@ -89,7 +89,7 @@ static int testUMPCoexistence() {
         printf("  FAIL: chord name status should be 0x06, got 0x%02X\n", (unsigned)status);
         failures++;
     } else {
-        printf("  OK:   chord name status=0x06 — matches CMIDI2_FLEX_DATA_STATUS_SET_CHORD_NAME\n");
+        printf("  OK:   chord name status=0x06 - matches CMIDI2_FLEX_DATA_STATUS_SET_CHORD_NAME\n");
     }
 
     // Verify Gingoduino's Major type value == cmidi2's CMIDI2_UMP_CHORD_TYPE_MAJOR (1)
@@ -100,7 +100,7 @@ static int testUMPCoexistence() {
                (int)CMIDI2_UMP_CHORD_TYPE_MAJOR, (unsigned)gingoChordType);
         failures++;
     } else {
-        printf("  OK:   Major chord type=%d — GingoMIDI2 matches CMIDI2_UMP_CHORD_TYPE_MAJOR\n",
+        printf("  OK:   Major chord type=%d - GingoMIDI2 matches CMIDI2_UMP_CHORD_TYPE_MAJOR\n",
                (int)gingoChordType);
     }
 
@@ -124,7 +124,7 @@ static int testKeySignatureStatus() {
         printf("  FAIL: keySignature status should be 0x05, got 0x%02X\n", (unsigned)status);
         failures++;
     } else {
-        printf("  OK:   keySignature status=0x05 — matches CMIDI2_FLEX_DATA_STATUS_SET_KEY_SIGNATURE\n");
+        printf("  OK:   keySignature status=0x05 - matches CMIDI2_FLEX_DATA_STATUS_SET_KEY_SIGNATURE\n");
     }
 
     return failures;
@@ -150,7 +150,7 @@ static int testNoteLetterEncoding() {
                (int)CMIDI2_UMP_CHORD_NAME_C, (unsigned)letter);
         failures++;
     } else {
-        printf("  OK:   C tonic letter=%d — GingoMIDI2 matches CMIDI2_UMP_CHORD_NAME_C\n",
+        printf("  OK:   C tonic letter=%d - GingoMIDI2 matches CMIDI2_UMP_CHORD_NAME_C\n",
                (int)letter);
     }
 
@@ -160,7 +160,7 @@ static int testNoteLetterEncoding() {
         printf("  FAIL: natural accidental should be 0, got %u\n", (unsigned)acc);
         failures++;
     } else {
-        printf("  OK:   natural accidental=0 — matches CMIDI2_UMP_CHORD_NAME_NATURAL\n");
+        printf("  OK:   natural accidental=0 - matches CMIDI2_UMP_CHORD_NAME_NATURAL\n");
     }
 
     return failures;

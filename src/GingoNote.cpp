@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // Implementation of GingoNote.
 //
 // SPDX-License-Identifier: MIT
@@ -34,7 +34,7 @@ void GingoNote::toNatural(const char* noteName, char* output, uint8_t maxLen) {
     if (idx >= 0) {
         data::readPgmStr(output, data::ENHARMONIC_MAP[idx].output, maxLen);
     } else {
-        // Not in map — copy as-is (already natural)
+        // Not in map - copy as-is (already natural)
         uint8_t i = 0;
         while (i < maxLen - 1 && noteName[i]) {
             output[i] = noteName[i];

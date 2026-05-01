@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoMIDI2: UMP Flex Data output adapters.
 //
 // Generates Universal MIDI Packet (UMP) Flex Data messages from gingoduino
@@ -12,7 +12,7 @@
 // MIDI-CI device discovery, profile inquiry and Property Exchange are also
 // outside this scope. Use a dedicated MIDI-CI library (e.g. midi2 lib).
 //
-// UMP Flex Data (Message Type 0xD) — Word 0 layout:
+// UMP Flex Data (Message Type 0xD) - Word 0 layout:
 //   bits 31-28: MT = 0xD
 //   bits 27-24: Group (0-15)
 //   bits 23-22: Format = 0b00 (complete in one UMP)
@@ -45,7 +45,7 @@
 namespace gingoduino {
 
 // ===========================================================================
-// GingoUMP — 128-bit Universal MIDI Packet (4 x 32-bit words)
+// GingoUMP - 128-bit Universal MIDI Packet (4 x 32-bit words)
 // ===========================================================================
 
 /// A 128-bit Universal MIDI Packet.
@@ -92,12 +92,12 @@ struct GingoUMP {
 };
 
 // ===========================================================================
-// GingoMIDI2 — UMP Flex Data factory (static methods, header-only)
+// GingoMIDI2 - UMP Flex Data factory (static methods, header-only)
 // ===========================================================================
 
 /// Generates MIDI 2.0 UMP Flex Data messages from gingoduino objects.
 ///
-/// All methods are static — no instance required.
+/// All methods are static - no instance required.
 ///
 /// Examples:
 ///   GingoChord chord("Am7");
@@ -300,7 +300,7 @@ private:
         for (uint8_t i = 0; i < TABLE_SIZE; i++) {
             if (strcmp(type, TABLE[i].name) == 0) return TABLE[i].midi2Type;
         }
-        return 0;  // Unknown — no direct MIDI 2.0 chord type
+        return 0;  // Unknown - no direct MIDI 2.0 chord type
     }
 
     /// Map gingoduino ScaleType to MIDI 2.0 mode byte for key signature.

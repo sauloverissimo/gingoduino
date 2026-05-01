@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoChordComparison: multidimensional chord pair analysis.
 //
 // Compares two chords in absolute (context-free) terms across 17 dimensions:

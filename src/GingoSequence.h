@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoSequence: a timeline of musical events with tempo and meter.
 //
 // SPDX-License-Identifier: MIT

@@ -1,5 +1,5 @@
-// Gingoduino — Music Theory Library for Embedded Systems
-// GingoProgression: harmonic progression analysis — identify, deduce, predict.
+// Gingoduino - Music Theory Library for Embedded Systems
+// GingoProgression: harmonic progression analysis - identify, deduce, predict.
 //
 // SPDX-License-Identifier: MIT
 

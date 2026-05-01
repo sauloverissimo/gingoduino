@@ -1,5 +1,5 @@
-// Gingoduino — Music Theory Library for Embedded Systems
-// Umbrella header — includes all available modules based on tier.
+// Gingoduino - Music Theory Library for Embedded Systems
+// Umbrella header - includes all available modules based on tier.
 //
 // SPDX-License-Identifier: MIT
 

@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoMIDI1: output adapters that translate musical structures
 //             into raw MIDI 1.0 byte streams.
 //
@@ -36,7 +36,7 @@
 
 namespace gingoduino {
 
-// Forward declarations — full headers included from the .cpp.
+// Forward declarations - full headers included from the .cpp.
 class GingoEvent;
 #if GINGODUINO_HAS_SEQUENCE
 class GingoSequence;

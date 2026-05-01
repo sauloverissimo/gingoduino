@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoMIDI1: output adapter implementations.
 //
 // SPDX-License-Identifier: MIT

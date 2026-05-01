@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // All music theory lookup data stored in PROGMEM (flash memory).
 //
 // SPDX-License-Identifier: MIT
@@ -12,7 +12,7 @@ namespace gingoduino {
 namespace data {
 
 // ===================================================================
-// 1. CHROMATIC SCALE — 12 pitch classes
+// 1. CHROMATIC SCALE - 12 pitch classes
 // ===================================================================
 
 static const char CHROMATIC_NAMES[12][3] PROGMEM = {
@@ -32,7 +32,7 @@ static const uint8_t FIFTHS_ORDER[12] PROGMEM = {
 };
 
 // ===================================================================
-// 2. ENHARMONIC MAP — sorted for binary search (ASCII only)
+// 2. ENHARMONIC MAP - sorted for binary search (ASCII only)
 // ===================================================================
 
 struct EnharmonicEntry {
@@ -41,7 +41,7 @@ struct EnharmonicEntry {
 };
 
 // Sorted alphabetically by input for binary search.
-// Unicode entries (♭) omitted — embedded uses ASCII notation.
+// Unicode entries (♭) omitted - embedded uses ASCII notation.
 static const EnharmonicEntry ENHARMONIC_MAP[] PROGMEM = {
     {"##A", "B" }, {"##B", "C#"}, {"##C", "D" }, {"##D", "E" },
     {"##E", "F#"}, {"##F", "G" }, {"##G", "A" },
@@ -62,7 +62,7 @@ static const EnharmonicEntry ENHARMONIC_MAP[] PROGMEM = {
 static const uint8_t ENHARMONIC_MAP_SIZE = sizeof(ENHARMONIC_MAP) / sizeof(ENHARMONIC_MAP[0]);
 
 // ===================================================================
-// 3. INTERVAL TABLE — 24 intervals across two octaves
+// 3. INTERVAL TABLE - 24 intervals across two octaves
 // ===================================================================
 
 struct IntervalData {
@@ -102,7 +102,7 @@ static const IntervalData INTERVAL_TABLE[24] PROGMEM = {
 };
 
 // ===================================================================
-// 4. SCALE MASKS — 10 scale types x 24-bit bitmask
+// 4. SCALE MASKS - 10 scale types x 24-bit bitmask
 // ===================================================================
 //
 // Each uint32_t has bit N set if semitone position N is active.
@@ -159,7 +159,7 @@ static const char* const SCALE_TYPE_NAMES[10] PROGMEM = {
 };
 
 // ===================================================================
-// 5. CHORD FORMULAS — 42 types
+// 5. CHORD FORMULAS - 42 types
 // ===================================================================
 //
 // Each formula stores interval indices (into INTERVAL_TABLE).
@@ -216,7 +216,7 @@ static const ChordFormula CHORD_FORMULAS[42] PROGMEM = {
 };
 
 // ===================================================================
-// 5b. CHORD TYPE ALIASES — sorted for binary search
+// 5b. CHORD TYPE ALIASES - sorted for binary search
 // ===================================================================
 
 struct ChordTypeAlias {
@@ -344,7 +344,7 @@ static const uint8_t DURATION_NAMES_SIZE = sizeof(DURATION_NAMES) / sizeof(DURAT
 #endif // GINGODUINO_HAS_DURATION
 
 // ===================================================================
-// 8. HARMONIC FUNCTION TABLE — function per degree (7 degrees)
+// 8. HARMONIC FUNCTION TABLE - function per degree (7 degrees)
 // ===================================================================
 
 #if GINGODUINO_HAS_FIELD
@@ -528,31 +528,31 @@ static const char* const INTERVAL_FULL_NAMES_PT[24] PROGMEM = {
 // Standard tunings stored as MIDI note numbers for each open string.
 // Strings ordered from lowest pitch to highest pitch.
 
-// Violao (guitar) — E2 A2 D3 G3 B3 E4
+// Violao (guitar) - E2 A2 D3 G3 B3 E4
 static const uint8_t TUNING_VIOLAO[6] PROGMEM = { 40, 45, 50, 55, 59, 64 };
 
-// Cavaquinho — D4 G4 B4 D5
+// Cavaquinho - D4 G4 B4 D5
 static const uint8_t TUNING_CAVAQUINHO[4] PROGMEM = { 62, 67, 71, 74 };
 
-// Bandolim (mandolin) — G3 D4 A4 E5
+// Bandolim (mandolin) - G3 D4 A4 E5
 static const uint8_t TUNING_BANDOLIM[4] PROGMEM = { 55, 62, 69, 76 };
 
-// Ukulele — G4 C4 E4 A4
+// Ukulele - G4 C4 E4 A4
 static const uint8_t TUNING_UKULELE[4] PROGMEM = { 67, 60, 64, 69 };
 
-// Drop D — D2 A2 D3 G3 B3 E4
+// Drop D - D2 A2 D3 G3 B3 E4
 static const uint8_t TUNING_DROP_D[6] PROGMEM = { 38, 45, 50, 55, 59, 64 };
 
-// Open G — D2 G2 D3 G3 B3 D4
+// Open G - D2 G2 D3 G3 B3 D4
 static const uint8_t TUNING_OPEN_G[6] PROGMEM = { 38, 43, 50, 55, 59, 62 };
 
-// DADGAD — D2 A2 D3 G3 A3 D4
+// DADGAD - D2 A2 D3 G3 A3 D4
 static const uint8_t TUNING_DADGAD[6] PROGMEM = { 38, 45, 50, 55, 57, 62 };
 
 #endif // GINGODUINO_HAS_FRETBOARD
 
 // ===================================================================
-// 12. PROGRESSION / TREE DATA — harmonic graph traditions
+// 12. PROGRESSION / TREE DATA - harmonic graph traditions
 // ===================================================================
 
 #if GINGODUINO_HAS_TREE
@@ -873,7 +873,7 @@ static const ProgSchemaTable PROG_SCHEMA_TABLES[PROG_TRADITION_COUNT] PROGMEM = 
 // 2 = tritone sub (SUBV7)
 // 3 = diminished passing (#Idim, bIIIdim, etc.)
 // 4 = borrowed/modal (IVm, bVI, bVII)
-// 5 = compound (IIm / IV, etc. — resolved via degree)
+// 5 = compound (IIm / IV, etc. - resolved via degree)
 
 // Degree mapping for branches that map directly to field degrees
 // 0xFF = requires special handling

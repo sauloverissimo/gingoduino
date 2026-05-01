@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoMonitor: event-driven harmonic state tracker.
 //
 // Receives MIDI note-on/off events and fires callbacks when the harmonic
@@ -7,7 +7,7 @@
 // Two callback styles are provided:
 //   • Function pointers (all tiers, zero-heap, compatible with AVR and
 //     the Arduino MIDI Library pattern)
-//   • std::function (Tier 3 only: ESP32-S3, Teensy, Daisy Seed — same
+//   • std::function (Tier 3 only: ESP32-S3, Teensy, Daisy Seed - same
 //     pattern as AM_MIDI2.0Lib's setChannelVoiceMessage([](UMP&){...}))
 //
 // Both styles can be used simultaneously; std::function takes precedence
@@ -56,13 +56,13 @@ namespace gingoduino {
 ///       display.print(c.name());
 ///   });
 ///
-///   mon.noteOn(60);  // C4 — triggers analysis
+///   mon.noteOn(60);  // C4 - triggers analysis
 ///   mon.noteOn(64);  // E4
-///   mon.noteOn(67);  // G4 — onChordDetected fires with "CM"
+///   mon.noteOn(67);  // G4 - onChordDetected fires with "CM"
 class GingoMonitor {
 public:
     // ------------------------------------------------------------------
-    // Callback types — function pointer style (all tiers, zero-heap)
+    // Callback types - function pointer style (all tiers, zero-heap)
     // ------------------------------------------------------------------
 
     /// Called when the identified chord changes.
@@ -99,7 +99,7 @@ public:
     uint8_t channel() const { return channelFilter_; }
 
     // ------------------------------------------------------------------
-    // Callback registration — function pointer style (all tiers)
+    // Callback registration - function pointer style (all tiers)
     // ------------------------------------------------------------------
 
     /// Register a callback for chord changes.
@@ -114,7 +114,7 @@ public:
 
 #if GINGODUINO_TIER >= 3
     // ------------------------------------------------------------------
-    // Callback registration — std::function style (Tier 3 only)
+    // Callback registration - std::function style (Tier 3 only)
     // Same ergonomics as AM_MIDI2.0Lib:
     //   processor.setChannelVoiceMessage([](UMP& u){ ... });
     // ------------------------------------------------------------------
@@ -150,7 +150,7 @@ public:
     void reset();
 
     // ------------------------------------------------------------------
-    // Sustain pedal — called by the user or via CC64
+    // Sustain pedal - called by the user or via CC64
     // ------------------------------------------------------------------
 
     /// Enable sustain. Notes released while sustain is active remain
@@ -163,7 +163,7 @@ public:
     void sustainOff();
 
     // ------------------------------------------------------------------
-    // State access (polling — always available)
+    // State access (polling - always available)
     // ------------------------------------------------------------------
 
     /// Number of currently held notes (includes sustained notes).
@@ -188,7 +188,7 @@ private:
     // Channel filter (0xFF = all channels, 0-15 = specific channel, UMP convention)
     uint8_t channelFilter_;
 
-    // Held MIDI note numbers (max 16 simultaneous — practical theory limit)
+    // Held MIDI note numbers (max 16 simultaneous - practical theory limit)
     static const uint8_t MAX_HELD = 16;
     uint8_t held_[MAX_HELD];
     uint8_t heldCount_;

@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoInterval: the distance between two notes.
 //
 // SPDX-License-Identifier: MIT
@@ -13,7 +13,7 @@ namespace gingoduino {
 
 class GingoNote; // forward declaration
 
-/// Represents a musical interval — the distance between two pitches.
+/// Represents a musical interval - the distance between two pitches.
 ///
 /// Only 1 byte per instance (an index into the INTERVAL_TABLE).
 ///

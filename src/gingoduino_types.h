@@ -1,5 +1,5 @@
-// Gingoduino — Music Theory Library for Embedded Systems
-// Base types: FixedStr, FixedArray — zero-heap replacements for std::string/vector.
+// Gingoduino - Music Theory Library for Embedded Systems
+// Base types: FixedStr, FixedArray - zero-heap replacements for std::string/vector.
 //
 // SPDX-License-Identifier: MIT
 
@@ -13,7 +13,7 @@
 namespace gingoduino {
 
 // ---------------------------------------------------------------------------
-// FixedStr<N> — fixed-capacity string, no heap allocation
+// FixedStr<N> - fixed-capacity string, no heap allocation
 // ---------------------------------------------------------------------------
 
 template<uint8_t N>
@@ -84,12 +84,12 @@ struct FixedStr {
 };
 
 // Common aliases
-using NoteStr  = FixedStr<5>;    // "C##\0" — max 4 chars + null
-using LabelStr = FixedStr<10>;   // "m7(b5)\0" — max 9 chars + null
-using NameStr  = FixedStr<16>;   // "Bbm7(b5)\0" — max 15 chars + null
+using NoteStr  = FixedStr<5>;    // "C##\0" - max 4 chars + null
+using LabelStr = FixedStr<10>;   // "m7(b5)\0" - max 9 chars + null
+using NameStr  = FixedStr<16>;   // "Bbm7(b5)\0" - max 15 chars + null
 
 // ---------------------------------------------------------------------------
-// FixedArray<T, MaxN> — fixed-capacity array, no heap allocation
+// FixedArray<T, MaxN> - fixed-capacity array, no heap allocation
 // ---------------------------------------------------------------------------
 
 template<typename T, uint8_t MaxN>

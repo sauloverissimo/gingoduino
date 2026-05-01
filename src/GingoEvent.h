@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoEvent: a musical event (note, chord, or rest) with duration.
 //
 // SPDX-License-Identifier: MIT

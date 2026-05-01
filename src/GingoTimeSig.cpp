@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // Implementation of GingoTimeSig.
 //
 // SPDX-License-Identifier: MIT

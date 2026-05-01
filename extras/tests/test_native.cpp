@@ -1,4 +1,4 @@
-// Native test — compiles with g++ to verify gingoduino logic.
+// Native test - compiles with g++ to verify gingoduino logic.
 // No Arduino framework needed; gingoduino_config.h provides PROGMEM stubs.
 //
 // Build (from repo root):
@@ -875,7 +875,7 @@ void testFretboard() {
 void testFieldDeduce() {
     printf("\n=== GingoField::deduce ===\n");
 
-    // Deduce from chords — full C major field
+    // Deduce from chords - full C major field
     {
         const char* items[] = {"CM", "Dm", "Em", "FM", "G7", "Am"};
         FieldMatch results[10];
@@ -887,7 +887,7 @@ void testFieldDeduce() {
         CHECK(results[0].scaleType == SCALE_MAJOR, "C major chords: type=major");
     }
 
-    // Deduce from partial chords — Am, Dm, Em -> C major (vi, ii, iii)
+    // Deduce from partial chords - Am, Dm, Em -> C major (vi, ii, iii)
     {
         const char* items[] = {"Am", "Dm", "Em"};
         FieldMatch results[10];
@@ -1191,7 +1191,7 @@ void testNoteContext() {
 void testChordComparison() {
     printf("\n=== GingoChordComparison ===\n");
 
-    // CM vs Am — relative pair (R transform)
+    // CM vs Am - relative pair (R transform)
     {
         GingoChord cm("CM"), am("Am");
         GingoChordComparison cmp = GingoChordComparison::compute(cm, am);
@@ -1205,7 +1205,7 @@ void testChordComparison() {
         CHECK(cmp.voice_leading >= 0, "CM/Am voice_leading computed");
     }
 
-    // CM vs Cm — parallel pair (P transform)
+    // CM vs Cm - parallel pair (P transform)
     {
         GingoChord cm("CM"), cmin("Cm");
         GingoChordComparison cmp = GingoChordComparison::compute(cm, cmin);
@@ -1214,7 +1214,7 @@ void testChordComparison() {
         CHECK(!cmp.same_quality, "CM/Cm same_quality=false");
     }
 
-    // CM vs Em — leading tone (L transform)
+    // CM vs Em - leading tone (L transform)
     {
         GingoChord cm("CM"), em("Em");
         GingoChordComparison cmp = GingoChordComparison::compute(cm, em);
@@ -1222,7 +1222,7 @@ void testChordComparison() {
         CHECK(cmp.transformation == NEO_L, "CM/Em transform=L (Leading-tone)");
     }
 
-    // CM vs CM — same chord
+    // CM vs CM - same chord
     {
         GingoChord cm1("CM"), cm2("CM");
         GingoChordComparison cmp = GingoChordComparison::compute(cm1, cm2);
@@ -1233,11 +1233,11 @@ void testChordComparison() {
         CHECK(cmp.voice_leading == 0, "CM/CM voice_leading=0");
     }
 
-    // CM vs Dm — no shared pitch classes
+    // CM vs Dm - no shared pitch classes
     {
         GingoChord cm("CM"), dm("Dm");
         GingoChordComparison cmp = GingoChordComparison::compute(cm, dm);
-        // CM={C,E,G}={0,4,7}, Dm={D,F,A}={2,5,9} — 0 shared
+        // CM={C,E,G}={0,4,7}, Dm={D,F,A}={2,5,9} - 0 shared
         CHECK(cmp.common_count == 0, "CM/Dm common_count=0 (no shared PCs)");
         CHECK(cmp.root_distance == 2, "CM/Dm root_distance=2");
     }
@@ -1291,7 +1291,7 @@ void testMonitor() {
         mon.noteOn(0, 67, 100);  // G
         CHECK(mon.hasChord(), "CM detected before noteOff");
         mon.noteOff(0, 67);  // remove G
-        // C+E alone — not enough for a chord
+        // C+E alone - not enough for a chord
         CHECK(!mon.hasChord(), "C+E alone not a chord");
     }
 
@@ -1321,7 +1321,7 @@ void testMonitor() {
         CHECK(!mon.hasChord(), "reset clears chord");
     }
 
-    // Channel filter — setChannel / channel() (0-15, 0xFF = all)
+    // Channel filter - setChannel / channel() (0-15, 0xFF = all)
     {
         GingoMonitor mon;
         mon.setChannel(1);
@@ -1400,7 +1400,7 @@ void testMonitor() {
 void testMIDI1() {
     printf("\n=== GingoMIDI1 (output adapters) ===\n");
 
-    // fromEvent — single note round-trip already covered in testEvent.
+    // fromEvent - single note round-trip already covered in testEvent.
     // Re-verify here as smoke test of the namespace export.
     {
         GingoEvent e = GingoEvent::noteEvent(GingoNote("C"),
@@ -1413,7 +1413,7 @@ void testMIDI1() {
               "fromEvent NoteOn C4 vel=100");
     }
 
-    // fromEvent — buffer too small returns 0.
+    // fromEvent - buffer too small returns 0.
     {
         GingoEvent e = GingoEvent::noteEvent(GingoNote("C"),
                                               GingoDuration("quarter"), 4);
@@ -1422,7 +1422,7 @@ void testMIDI1() {
         CHECK(n == 0, "fromEvent returns 0 when maxLen<6");
     }
 
-    // fromSequence — channel override.
+    // fromSequence - channel override.
     {
         GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
         seq.add(GingoEvent::noteEvent(GingoNote("C"),
@@ -1433,7 +1433,7 @@ void testMIDI1() {
         CHECK(buf[0] == (0x90 | 5), "fromSequence channel override 5");
     }
 
-    // fromSequence — KEEP_CHANNEL preserves per-event channel.
+    // fromSequence - KEEP_CHANNEL preserves per-event channel.
     {
         GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
         seq.add(GingoEvent::noteEvent(GingoNote("C"),
@@ -1446,7 +1446,7 @@ void testMIDI1() {
         CHECK(buf[0] == (0x90 | 7), "fromSequence KEEP_CHANNEL preserves event channel");
     }
 
-    // fromSequence — explicit channel 0 forces channel 0 (not 'keep').
+    // fromSequence - explicit channel 0 forces channel 0 (not 'keep').
     {
         GingoSequence seq(GingoTempo(120), GingoTimeSig(4, 4));
         seq.add(GingoEvent::noteEvent(GingoNote("C"),
@@ -1466,7 +1466,7 @@ void testMIDI1() {
 void testMIDI2() {
     printf("\n=== GingoMIDI2 ===\n");
 
-    // chordName — CM
+    // chordName - CM
     {
         GingoUMP ump = GingoMIDI2::chordName(GingoChord("CM"));
         CHECK(ump.wordCount == 4, "chordName CM wordCount=4");
@@ -1482,7 +1482,7 @@ void testMIDI2() {
         CHECK(type == 1, "chordName CM type=1 (Major)");
     }
 
-    // chordName — Am7
+    // chordName - Am7
     {
         GingoUMP ump = GingoMIDI2::chordName(GingoChord("Am7"));
         uint32_t letter = (ump.words[1] >> 24) & 0xF;
@@ -1491,7 +1491,7 @@ void testMIDI2() {
         CHECK(type == 9, "chordName Am7 type=9 (Minor 7th)");
     }
 
-    // chordName — F#m
+    // chordName - F#m
     {
         GingoUMP ump = GingoMIDI2::chordName(GingoChord("F#m"));
         uint32_t letter = (ump.words[1] >> 24) & 0xF;
@@ -1502,7 +1502,7 @@ void testMIDI2() {
         CHECK(type == 7, "chordName F#m type=7 (Minor)");
     }
 
-    // chordName — Bbdim
+    // chordName - Bbdim
     {
         GingoUMP ump = GingoMIDI2::chordName(GingoChord("Bbdim"));
         // Bb → natural name A#, so encoded as A# (letter=1, acc=sharp)
@@ -1512,7 +1512,7 @@ void testMIDI2() {
         CHECK(letter >= 1 && letter <= 7, "chordName Bb letter valid");
     }
 
-    // keySignature — C Major
+    // keySignature - C Major
     {
         GingoScale cMaj("C", SCALE_MAJOR);
         GingoUMP ump = GingoMIDI2::keySignature(cMaj);
@@ -1525,7 +1525,7 @@ void testMIDI2() {
         CHECK(mode == 0, "keySig C Major mode=0");
     }
 
-    // keySignature — A Natural Minor
+    // keySignature - A Natural Minor
     {
         GingoScale aMin("A", SCALE_NATURAL_MINOR);
         GingoUMP ump = GingoMIDI2::keySignature(aMin);
@@ -1535,7 +1535,7 @@ void testMIDI2() {
         CHECK(mode == 1, "keySig A minor mode=1");
     }
 
-    // keySignature — group and channel
+    // keySignature - group and channel
     {
         GingoScale cMaj("C", SCALE_MAJOR);
         GingoUMP ump = GingoMIDI2::keySignature(cMaj, 3, 5);

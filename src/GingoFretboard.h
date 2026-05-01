@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoFretboard: fretted string instrument engine.
 //
 // SPDX-License-Identifier: MIT
@@ -84,13 +84,13 @@ public:
     /// Factory: mandolin (4 strings, G D A E).
     static GingoFretboard mandolin(uint8_t numFrets = 17);
 
-    /// Factory: standard 6-string guitar — Portuguese alias for guitar().
+    /// Factory: standard 6-string guitar - Portuguese alias for guitar().
     static GingoFretboard violao(uint8_t numFrets = 19);
 
     /// Factory: cavaquinho (4 strings).
     static GingoFretboard cavaquinho(uint8_t numFrets = 17);
 
-    /// Factory: bandolim — Portuguese alias for mandolin().
+    /// Factory: bandolim - Portuguese alias for mandolin().
     static GingoFretboard bandolim(uint8_t numFrets = 17);
 
     /// Factory: ukulele (4 strings).
@@ -161,7 +161,7 @@ public:
 
     /// Find the best fingering for each diatonic chord of the given scale.
     /// Uses the scale's harmonic field (triads). Returns number of fingerings written.
-    /// Note: uses the parent scale type — modes return their parallel major/minor field.
+    /// Note: uses the parent scale type - modes return their parallel major/minor field.
     uint8_t commonChords(const GingoScale& scale,
                          GingoFingering* output, uint8_t maxResults) const;
 

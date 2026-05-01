@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // Implementation of GingoTree.
 //
 // SPDX-License-Identifier: MIT
@@ -176,7 +176,7 @@ bool GingoTree::resolve(const char* branch, char* chordName, uint8_t maxLen) con
                 }
             }
         }
-        // Compound branches like "IIm / IV" — resolve as the first part
+        // Compound branches like "IIm / IV" - resolve as the first part
         // "IIm / IV" → IIm of IV → the ii chord of the IV key
         // Simplified: just resolve the first part's degree
         // Parse roman numeral from prefix

@@ -1,5 +1,5 @@
-// Gingoduino — Music Theory Library for Embedded Systems
-// GingoField: harmonic field — chords built from each scale degree.
+// Gingoduino - Music Theory Library for Embedded Systems
+// GingoField: harmonic field - chords built from each scale degree.
 //
 // SPDX-License-Identifier: MIT
 
@@ -19,7 +19,7 @@
 
 namespace gingoduino {
 
-/// Represents a harmonic field — the diatonic chords built from each
+/// Represents a harmonic field - the diatonic chords built from each
 /// degree of a scale.
 ///
 /// Examples:
@@ -27,7 +27,7 @@ namespace gingoduino {
 ///   GingoChord triads[7];
 ///   f.chords(triads, 7);
 ///   // triads: CM, Dm, Em, FM, GM, Am, Bdim
-/// Result of GingoField::deduce() — a candidate harmonic field match.
+/// Result of GingoField::deduce() - a candidate harmonic field match.
 struct FieldMatch {
     const char* tonicName;   // tonic name (points to internal static buffer)
     ScaleType   scaleType;   // scale type of the candidate field

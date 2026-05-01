@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // Implementation of GingoMonitor.
 //
 // SPDX-License-Identifier: MIT
@@ -29,7 +29,7 @@ GingoMonitor::GingoMonitor()
 }
 
 // ---------------------------------------------------------------------------
-// Callback registration — function pointer
+// Callback registration - function pointer
 // ---------------------------------------------------------------------------
 
 void GingoMonitor::onChordDetected(ChordCallback cb, void* ctx) {
@@ -49,7 +49,7 @@ void GingoMonitor::onNoteOn(NoteCallback cb, void* ctx) {
 
 #if GINGODUINO_TIER >= 3
 // ---------------------------------------------------------------------------
-// Callback registration — std::function (Tier 3)
+// Callback registration - std::function (Tier 3)
 // ---------------------------------------------------------------------------
 
 void GingoMonitor::onChordDetected(std::function<void(const GingoChord&)> fn) {

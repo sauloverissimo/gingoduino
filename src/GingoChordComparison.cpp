@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoChordComparison: implementation.
 //
 // SPDX-License-Identifier: MIT
@@ -88,7 +88,7 @@ static void computeIntervalVector_(uint16_t pc_mask, uint8_t iv[6]) {
 // Voice leading (minimum sum of chromatic distances over all pairings)
 // ===========================================================================
 
-/// In-place sort of a uint8_t array (insertion sort — stable, tiny N).
+/// In-place sort of a uint8_t array (insertion sort - stable, tiny N).
 static void sortU8_(uint8_t* a, uint8_t n) {
     for (uint8_t i = 1; i < n; i++) {
         uint8_t key = a[i];

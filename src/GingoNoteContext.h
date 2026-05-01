@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoNoteContext: per-note harmonic context (degree, interval, function).
 //
 // Returned by GingoField::noteContext(). Contains the harmonic context

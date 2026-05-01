@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // Implementation of GingoField.
 //
 // SPDX-License-Identifier: MIT
@@ -174,7 +174,7 @@ const char* GingoField::roleOf(const char* chordName, char* buf, uint8_t maxLen)
 }
 
 // ---------------------------------------------------------------------------
-// deduce — infer probable harmonic fields from notes or chords
+// deduce - infer probable harmonic fields from notes or chords
 // ---------------------------------------------------------------------------
 
 // Helper: detect if string looks like a bare note (1-2 chars, A-G + optional #/b)

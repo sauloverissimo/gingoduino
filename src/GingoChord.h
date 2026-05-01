@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoChord: a combination of notes with harmonic identity.
 //
 // SPDX-License-Identifier: MIT
@@ -13,7 +13,7 @@
 
 namespace gingoduino {
 
-/// Represents a musical chord — a root note plus a set of intervals.
+/// Represents a musical chord - a root note plus a set of intervals.
 ///
 /// Constructed from a name string (e.g. "Cm7", "Db7M", "A#m") and
 /// resolves notes/intervals from the PROGMEM chord formula database.

@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // Implementation of GingoProgression.
 //
 // SPDX-License-Identifier: MIT
@@ -90,7 +90,7 @@ GingoTree GingoProgression::tree(uint8_t traditionId) const {
 }
 
 // ---------------------------------------------------------------------------
-// identify — find the single best match
+// identify - find the single best match
 // ---------------------------------------------------------------------------
 
 bool GingoProgression::identify(const char* const* branches, uint8_t count,
@@ -176,7 +176,7 @@ bool GingoProgression::identify(const char* const* branches, uint8_t count,
 }
 
 // ---------------------------------------------------------------------------
-// deduce — find all probable matches, ranked
+// deduce - find all probable matches, ranked
 // ---------------------------------------------------------------------------
 
 uint8_t GingoProgression::deduce(const char* const* branches, uint8_t count,
@@ -271,7 +271,7 @@ uint8_t GingoProgression::deduce(const char* const* branches, uint8_t count,
 }
 
 // ---------------------------------------------------------------------------
-// predict — suggest next branches
+// predict - suggest next branches
 // ---------------------------------------------------------------------------
 
 uint8_t GingoProgression::predict(const char* const* branches, uint8_t count,

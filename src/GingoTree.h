@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoTree: directed harmonic graph for a given tradition and scale context.
 //
 // SPDX-License-Identifier: MIT

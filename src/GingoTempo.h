@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoTempo: beats per minute and time conversions.
 //
 // SPDX-License-Identifier: MIT

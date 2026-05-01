@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoNote: the atomic unit of Western music.
 //
 // SPDX-License-Identifier: MIT

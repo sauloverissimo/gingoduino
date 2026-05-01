@@ -1,4 +1,4 @@
-// Gingoduino — Music Theory Library for Embedded Systems
+// Gingoduino - Music Theory Library for Embedded Systems
 // GingoDuration: rhythmic durations and time values.
 //
 // SPDX-License-Identifier: MIT
