@@ -382,11 +382,17 @@ Veja [examples/MIDI2_Monitor/MIDI2_Monitor.ino](examples/MIDI2_Monitor/MIDI2_Mon
 | HarmonicField | Tríades, tétrades, funções harmônicas | 2 |
 | TDisplayS3Explorer | GUI interativa de 7 páginas no LilyGo T-Display S3 | 3 |
 | T-Display-S3-Piano | Visualizador piano de 25 teclas com análise teórica e síntese onboard | 3 |
-| MIDI_to_Gingoduino | Recebe MIDI USB/BLE via ESP32_Host_MIDI e analisa com Gingoduino | 3 |
-| RealtimeChordIdentifier | Identifica acordes a partir de notas simultâneas (entrada USB/BLE) | 3 |
+| T-Display-S3-Piano-Debug | Log diagnóstico de eventos MIDI no ST7789 (sem audio, sem teoria Gingoduino) | 3 |
 | MIDI2_Monitor | UART MIDI 1.0 in (parser inline), análise no Monitor, UMP Flex Data out | 3 |
 | Gingoduino_to_MIDI | Constrói uma sequência e serializa via `GingoMIDI1::fromSequence` | 3 |
+| I2S_DAC_Test | Utilitário de hardware: varre combinações de pinos I2S pra achar fiação válida do PCM5102 | 3 |
 | V04_SelfTest | Suite de aceitação on-device dos adaptadores de saída da v0.4.0 | 3 |
+
+**Procurando exemplos de entrada MIDI USB/BLE?** Eles vivem na biblioteca de transporte, não aqui:
+- [`ESP32_Host_MIDI/examples/T-Display-S3-Gingoduino/`](https://github.com/sauloverissimo/ESP32_Host_MIDI/tree/main/examples/T-Display-S3-Gingoduino) - detecção de acorde e campo em tempo real a partir de teclado MIDI USB ou BLE
+- [`ESP32_Host_MIDI/examples/T-Display-S3-Piano/`](https://github.com/sauloverissimo/ESP32_Host_MIDI/tree/main/examples/T-Display-S3-Piano) - versão mantida do piano visualizer
+
+A separação é deliberada: gingoduino é motor de teoria musical e fica fora do fio; a biblioteca de transporte cuida dos exemplos de integração no nível dos bytes.
 
 ## Testes nativos
 

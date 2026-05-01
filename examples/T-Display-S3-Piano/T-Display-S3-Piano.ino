@@ -8,12 +8,14 @@
 // Anti-tearing: full-screen sprite (double-buffered in PSRAM).
 //
 // Dependencies:
-//   - ESP32_Host_MIDI (this library)
+//   - ESP32_Host_MIDI v6.0+ (https://github.com/sauloverissimo/ESP32_Host_MIDI)
 //   - Gingoduino v0.4.0+ (https://github.com/sauloverissimo/gingoduino)
 //   - LovyanGFX
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>   // v6.0: explicit USB Host transport
+#include <BLEConnection.h>   // v6.0: explicit BLE peripheral transport
 #include <GingoAdapter.h>
 #include "PianoDisplay.h"
 #include "SynthEngine.h"
@@ -22,6 +24,8 @@
 using namespace gingoduino;
 
 // ── Global instances ──────────────────────────────────────────────────────────
+USBConnection usbHost;       // v6.0: explicit USB Host (Arturia, etc.)
+BLEConnection bleHost;       // v6.0: explicit BLE peripheral (iPad, iPhone)
 SynthEngine synth;
 
 // ── Active notes state ────────────────────────────────────────────────────────
@@ -120,6 +124,10 @@ void setup() {
     cfg.maxEvents       = 64;
     cfg.chordTimeWindow = 0;
     cfg.bleName         = "ESP32 Piano";
+    midiHandler.addTransport(&usbHost);   // v6.0: explicit
+    midiHandler.addTransport(&bleHost);
+    usbHost.begin();
+    bleHost.begin("ESP32 Piano");
     midiHandler.begin(cfg);
 
     synth.begin();

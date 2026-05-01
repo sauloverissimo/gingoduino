@@ -18,12 +18,18 @@
 //   Button 1 (GPIO  0): scroll log up
 //   Button 2 (GPIO 14): clear log + reset state
 //
-// Dependencies: ESP32_Host_MIDI, LovyanGFX
+// Dependencies: ESP32_Host_MIDI v6.0+, LovyanGFX
 
 #include <Arduino.h>
 #include <LovyanGFX.h>
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>   // v6.0: explicit USB Host transport
+#include <BLEConnection.h>   // v6.0: explicit BLE peripheral transport
 #include "mapping.h"
+
+// ── Global transport instances ────────────────────────────────────────────────
+USBConnection usbHost;
+BLEConnection bleHost;
 
 // ── LGFX - T-Display S3 (ST7789, 8-bit parallel) ────────────────────────────
 class LGFX : public lgfx::LGFX_Device {
@@ -290,6 +296,10 @@ void setup() {
     cfg.maxEvents       = 64;
     cfg.chordTimeWindow = 0;
     cfg.bleName         = "ESP32-Debug";
+    midiHandler.addTransport(&usbHost);   // v6.0: explicit
+    midiHandler.addTransport(&bleHost);
+    usbHost.begin();
+    bleHost.begin("ESP32-Debug");
     midiHandler.begin(cfg);
 
     midiHandler.setRawMidiCallback(onRawMidi);
